@@ -26,8 +26,6 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <openthread/openthread.h>
-
 #include "common/code_utils.hpp"
 #include "thread/link_quality.hpp"
 #include "utils/wrap_string.h"
@@ -93,6 +91,7 @@ void TestLinkQualityData(RssTestData aRssData)
     size_t          i;
 
     printf("- - - - - - - - - - - - - - - - - -\n");
+    linkInfo.Clear();
     min = kMinRssValue;
     max = kMaxRssValue;
 
@@ -142,8 +141,8 @@ int8_t GetRandomRss(void)
 {
     uint32_t value;
 
-    value = otPlatRandomGet() % 128;
-    return static_cast<int8_t>(-value);
+    value = rand() % 128;
+    return -static_cast<int8_t>(value);
 }
 
 void TestRssAveraging(void)
@@ -387,6 +386,8 @@ void TestSuccessRateTracker(void)
 
     printf("\nTesting SuccessRateTracker\n");
 
+    rateTracker.Reset();
+
     VerifyOrQuit(rateTracker.GetSuccessRate() == kMaxRate, "SuccessRateTracker: Initial value incorrect");
     VerifyOrQuit(rateTracker.GetFailureRate() == 0, "SuccessRateTracker: Initial value incorrect");
 
@@ -485,7 +486,6 @@ void TestSuccessRateTracker(void)
 
 } // namespace ot
 
-#ifdef ENABLE_TEST_MAIN
 int main(void)
 {
     ot::TestRssAveraging();
@@ -494,4 +494,3 @@ int main(void)
     printf("\nAll tests passed\n");
     return 0;
 }
-#endif

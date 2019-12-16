@@ -37,10 +37,11 @@
 #include "openthread-core-config.h"
 
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include "utils/wrap_string.h"
 
-#include <openthread/types.h>
+#include <openthread/error.h>
 
 #include "common/code_utils.hpp"
 
@@ -108,7 +109,7 @@ public:
      * @param[in] ...        Arguments for the format specification.
      *
      */
-    String(const char *aFormat, ...)
+    explicit String(const char *aFormat, ...)
         : mLength(0)
     {
         va_list args;

@@ -36,8 +36,11 @@
 
 #include "openthread-core-config.h"
 
+#include <openthread/border_agent.h>
+
 #include "coap/coap.hpp"
 #include "common/locator.hpp"
+#include "net/udp6.hpp"
 
 namespace ot {
 
@@ -57,66 +60,76 @@ public:
     explicit BorderAgent(Instance &aInstance);
 
     /**
-     * This method starts the BorderAgent service.
+     * This method starts the Border Agent service.
      *
-     * @retval OT_ERROR_NONE  Successfully started the BorderAgent service.
+     * @retval OT_ERROR_NONE    Successfully started the Border Agent service.
+     * @retval OT_ERROR_ALREADY Already started.
      *
      */
     otError Start(void);
 
     /**
-     * This method stops the BorderAgent service.
+     * This method stops the Border Agent service.
      *
-     * @retval OT_ERROR_NONE  Successfully stopped the BorderAgent service.
+     * @retval OT_ERROR_NONE  Successfully stopped the Border Agent service.
      *
      */
     otError Stop(void);
+
+    /**
+     * This method gets the state of the Border Agent service.
+     *
+     * @returns The state of the Border Agent service.
+     *
+     */
+    otBorderAgentState GetState(void) const { return mState; }
 
 private:
     static void HandleConnected(bool aConnected, void *aContext)
     {
         static_cast<BorderAgent *>(aContext)->HandleConnected(aConnected);
     }
-    void    HandleConnected(bool aConnected);
-    otError StartCoaps(void);
+    void HandleConnected(bool aConnected);
 
     template <Coap::Resource BorderAgent::*aResource>
-    static void HandleRequest(void *               aContext,
-                              otCoapHeader *       aHeader,
-                              otMessage *          aMessage,
-                              const otMessageInfo *aMessageInfo)
+    static void HandleRequest(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo)
     {
         static_cast<BorderAgent *>(aContext)->ForwardToLeader(
-            *static_cast<Coap::Header *>(aHeader), *static_cast<Message *>(aMessage),
-            *static_cast<const Ip6::MessageInfo *>(aMessageInfo),
-            (static_cast<BorderAgent *>(aContext)->*aResource).GetUriPath(), false);
+            *static_cast<Coap::Message *>(aMessage), *static_cast<const Ip6::MessageInfo *>(aMessageInfo),
+            (static_cast<BorderAgent *>(aContext)->*aResource).GetUriPath(), false, false);
     }
 
     static void HandleTimeout(Timer &aTimer);
     void        HandleTimeout(void);
 
     static void HandleCoapResponse(void *               aContext,
-                                   otCoapHeader *       aHeader,
                                    otMessage *          aMessage,
                                    const otMessageInfo *aMessageInfo,
                                    otError              aResult);
 
-    void    SendErrorMessage(const Coap::Header &aHeader);
-    otError ForwardToLeader(const Coap::Header &    aHeader,
-                            const Message &         aMessage,
-                            const Ip6::MessageInfo &aMessageInfo,
-                            const char *            aPath,
-                            bool                    aSeparate);
-    otError ForwardToCommissioner(const Coap::Header &aHeader, const Message &aMessage);
-    void    HandleKeepAlive(const Coap::Header &aHeader, const Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
-    void    HandleRelayTransmit(const Coap::Header &aHeader, const Message &aMessage);
-    void    HandleRelayReceive(const Coap::Header &aHeader, const Message &aMessage);
+    otError     ForwardToLeader(const Coap::Message &   aMessage,
+                                const Ip6::MessageInfo &aMessageInfo,
+                                const char *            aPath,
+                                bool                    aPetition,
+                                bool                    aSeparate);
+    otError     ForwardToCommissioner(Coap::Message &aForwardMessage, const Message &aMessage);
+    void        HandleKeepAlive(const Coap::Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
+    void        HandleRelayTransmit(const Coap::Message &aMessage);
+    void        HandleRelayReceive(const Coap::Message &aMessage);
+    void        HandleProxyTransmit(const Coap::Message &aMessage);
+    static bool HandleUdpReceive(void *aContext, const otMessage *aMessage, const otMessageInfo *aMessageInfo)
+    {
+        return static_cast<BorderAgent *>(aContext)->HandleUdpReceive(
+            *static_cast<const Message *>(aMessage), *static_cast<const Ip6::MessageInfo *>(aMessageInfo));
+    }
+    bool HandleUdpReceive(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
+
+    void SetState(otBorderAgentState aState);
 
     enum
     {
-        kBorderAgentUdpPort = 49191,     ///< UDP port of border agent service.
-        kKeepAliveTimeout   = 50 * 1000, ///< Timeout to reject a commissioner.
-        kRestartDelay       = 1 * 1000,  ///< Delay to restart border agent service.
+        kKeepAliveTimeout = 50 * 1000, ///< Timeout to reject a commissioner.
+        kRestartDelay     = 1 * 1000,  ///< Delay to restart border agent service.
     };
 
     Ip6::MessageInfo mMessageInfo;
@@ -131,9 +144,13 @@ private:
     Coap::Resource mActiveSet;
     Coap::Resource mPendingGet;
     Coap::Resource mPendingSet;
+    Coap::Resource mProxyTransmit;
 
-    TimerMilli mTimer;
-    bool       mIsStarted;
+    Ip6::UdpReceiver         mUdpReceiver; ///< The UDP receiver to receive packets from external commissioner
+    Ip6::NetifUnicastAddress mCommissionerAloc;
+
+    TimerMilli         mTimer;
+    otBorderAgentState mState;
 };
 
 } // namespace MeshCoP

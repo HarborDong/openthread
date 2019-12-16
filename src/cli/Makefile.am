@@ -108,10 +108,15 @@ include $(abs_top_nlbuild_autotools_dir)/automake/pre.am
 # Unless and until these libraries do not "accidently" suck in
 # a "flavored" header file somewhere.
 
-lib_LIBRARIES =                       \
-    libopenthread-cli-mtd.a           \
-    libopenthread-cli-ftd.a           \
-    $(NULL)
+lib_LIBRARIES                       = $(NULL)
+
+if OPENTHREAD_ENABLE_FTD
+lib_LIBRARIES                      += libopenthread-cli-ftd.a
+endif
+
+if OPENTHREAD_ENABLE_MTD
+lib_LIBRARIES                      += libopenthread-cli-mtd.a
+endif
 
 CPPFLAGS_COMMON =                     \
     -I$(top_srcdir)/include           \
@@ -139,10 +144,14 @@ libopenthread_cli_ftd_a_CPPFLAGS =    \
 SOURCES_COMMON =                      \
     cli.cpp                           \
     cli_coap.cpp                      \
+    cli_coap_secure.cpp               \
+    cli_commissioner.cpp              \
     cli_console.cpp                   \
     cli_dataset.cpp                   \
+    cli_joiner.cpp                    \
+    cli_server.cpp                    \
     cli_uart.cpp                      \
-    cli_udp_example.cpp               \
+    cli_udp.cpp                       \
     $(NULL)
 
 libopenthread_cli_ftd_a_SOURCES =     \
@@ -156,11 +165,16 @@ libopenthread_cli_mtd_a_SOURCES =     \
 noinst_HEADERS                      = \
     cli.hpp                           \
     cli_coap.hpp                      \
+    cli_coap_secure.hpp               \
+    cli_commissioner.hpp              \
+    cli_config.h                      \
     cli_console.hpp                   \
     cli_dataset.hpp                   \
+    cli_joiner.hpp                    \
     cli_server.hpp                    \
     cli_uart.hpp                      \
-    cli_udp_example.hpp               \
+    cli_udp.hpp                       \
+    x509_cert_key.hpp                 \
     $(NULL)
 
 if OPENTHREAD_BUILD_COVERAGE

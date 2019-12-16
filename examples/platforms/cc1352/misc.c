@@ -29,7 +29,6 @@
 #include <openthread/config.h>
 
 #include <driverlib/sys_ctrl.h>
-#include <openthread/types.h>
 #include <openthread/platform/misc.h>
 
 /*
@@ -44,7 +43,8 @@
  */
 void otPlatReset(otInstance *aInstance)
 {
-    (void)aInstance;
+    OT_UNUSED_VARIABLE(aInstance);
+
     SysCtrlSystemReset();
 }
 
@@ -53,7 +53,8 @@ void otPlatReset(otInstance *aInstance)
  */
 otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
 {
-    (void)aInstance;
+    OT_UNUSED_VARIABLE(aInstance);
+
     otPlatResetReason ret;
 
     switch (SysCtrlResetSourceGet())

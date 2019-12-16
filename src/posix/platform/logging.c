@@ -26,58 +26,50 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "openthread-core-config.h"
 #include "platform-posix.h"
-#include <openthread-core-config.h>
-#include <openthread/config.h>
 
-#include <ctype.h>
-#include <inttypes.h>
+#include <assert.h>
 #include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
 #include <syslog.h>
 
 #include <openthread/platform/logging.h>
 
-#include "code_utils.h"
-
-// Macro to append content to end of the log string.
-
-#define LOG_PRINTF(...)                                                                   \
-    charsWritten = snprintf(&logString[offset], sizeof(logString) - offset, __VA_ARGS__); \
-    otEXPECT_ACTION(charsWritten >= 0, logString[offset] = 0);                            \
-    offset += (unsigned int)charsWritten;                                                 \
-    otEXPECT_ACTION(offset < sizeof(logString), logString[sizeof(logString) - 1] = 0)
-
-#if (OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_PLATFORM_DEFINED) || \
-    (OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_NCP_SPINEL)
-OT_TOOL_WEAK void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
+#if OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_PLATFORM_DEFINED
+void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
 {
-    char         logString[512];
-    unsigned int offset;
-    int          charsWritten;
-    va_list      args;
+    OT_UNUSED_VARIABLE(aLogRegion);
 
-    offset = 0;
+    va_list args;
 
-    LOG_PRINTF("[%" PRIx64 "] ", NODE_ID);
+    switch (aLogLevel)
+    {
+    case OT_LOG_LEVEL_NONE:
+        aLogLevel = LOG_ALERT;
+        break;
+    case OT_LOG_LEVEL_CRIT:
+        aLogLevel = LOG_CRIT;
+        break;
+    case OT_LOG_LEVEL_WARN:
+        aLogLevel = LOG_WARNING;
+        break;
+    case OT_LOG_LEVEL_NOTE:
+        aLogLevel = LOG_NOTICE;
+        break;
+    case OT_LOG_LEVEL_INFO:
+        aLogLevel = LOG_INFO;
+        break;
+    case OT_LOG_LEVEL_DEBG:
+        aLogLevel = LOG_DEBUG;
+        break;
+    default:
+        assert(false);
+        aLogLevel = LOG_DEBUG;
+        break;
+    }
 
     va_start(args, aFormat);
-    charsWritten = vsnprintf(&logString[offset], sizeof(logString) - offset, aFormat, args);
+    vsyslog(aLogLevel, aFormat, args);
     va_end(args);
-
-    otEXPECT_ACTION(charsWritten >= 0, logString[offset] = 0);
-
-exit:
-#ifndef _WIN32
-    syslog(LOG_CRIT, "%s", logString);
-#else
-    printf("%s\r\n", logString);
-#endif
-
-    (void)aLogLevel;
-    (void)aLogRegion;
 }
-
-#endif // #if (OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_PLATFORM_DEFINED)
+#endif // OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_PLATFORM_DEFINED

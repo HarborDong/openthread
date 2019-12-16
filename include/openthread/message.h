@@ -35,7 +35,8 @@
 #ifndef OPENTHREAD_MESSAGE_H_
 #define OPENTHREAD_MESSAGE_H_
 
-#include <openthread/types.h>
+#include <openthread/instance.h>
+#include <openthread/platform/toolchain.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,6 +51,63 @@ extern "C" {
  * @{
  *
  */
+
+/**
+ * This structure points to an OpenThread message buffer.
+ */
+typedef struct otMessage
+{
+    struct otMessage *mNext; ///< A pointer to the next Message buffer.
+} otMessage;
+
+/**
+ * This structure represents the message buffer information.
+ *
+ */
+typedef struct otBufferInfo
+{
+    uint16_t mTotalBuffers;            ///< The number of buffers in the pool.
+    uint16_t mFreeBuffers;             ///< The number of free message buffers.
+    uint16_t m6loSendMessages;         ///< The number of messages in the 6lo send queue.
+    uint16_t m6loSendBuffers;          ///< The number of buffers in the 6lo send queue.
+    uint16_t m6loReassemblyMessages;   ///< The number of messages in the 6LoWPAN reassembly queue.
+    uint16_t m6loReassemblyBuffers;    ///< The number of buffers in the 6LoWPAN reassembly queue.
+    uint16_t mIp6Messages;             ///< The number of messages in the IPv6 send queue.
+    uint16_t mIp6Buffers;              ///< The number of buffers in the IPv6 send queue.
+    uint16_t mMplMessages;             ///< The number of messages in the MPL send queue.
+    uint16_t mMplBuffers;              ///< The number of buffers in the MPL send queue.
+    uint16_t mMleMessages;             ///< The number of messages in the MLE send queue.
+    uint16_t mMleBuffers;              ///< The number of buffers in the MLE send queue.
+    uint16_t mArpMessages;             ///< The number of messages in the ARP send queue.
+    uint16_t mArpBuffers;              ///< The number of buffers in the ARP send queue.
+    uint16_t mCoapMessages;            ///< The number of messages in the CoAP send queue.
+    uint16_t mCoapBuffers;             ///< The number of buffers in the CoAP send queue.
+    uint16_t mCoapSecureMessages;      ///< The number of messages in the CoAP secure send queue.
+    uint16_t mCoapSecureBuffers;       ///< The number of buffers in the CoAP secure send queue.
+    uint16_t mApplicationCoapMessages; ///< The number of messages in the application CoAP send queue.
+    uint16_t mApplicationCoapBuffers;  ///< The number of buffers in the application CoAP send queue.
+} otBufferInfo;
+
+/**
+ * This enumeration defines the OpenThread message priority levels.
+ *
+ */
+typedef enum otMessagePriority
+{
+    OT_MESSAGE_PRIORITY_LOW    = 0, ///< Low priority level.
+    OT_MESSAGE_PRIORITY_NORMAL = 1, ///< Normal priority level.
+    OT_MESSAGE_PRIORITY_HIGH   = 2, ///< High priority level.
+} otMessagePriority;
+
+/**
+ * This structure represents a message settings.
+ *
+ */
+typedef struct otMessageSettings
+{
+    bool              mLinkSecurityEnabled; ///< TRUE if the message should be secured at Layer 2.
+    otMessagePriority mPriority;            ///< The message priority level.
+} otMessageSettings;
 
 /**
  * Free an allocated message buffer.
@@ -84,7 +142,7 @@ void otMessageFree(otMessage *aMessage);
  * @sa otMessageSetLength
  *
  */
-uint16_t otMessageGetLength(otMessage *aMessage);
+uint16_t otMessageGetLength(const otMessage *aMessage);
 
 /**
  * Set the message length in bytes.
@@ -122,7 +180,7 @@ otError otMessageSetLength(otMessage *aMessage, uint16_t aLength);
  * @sa otMessageWrite
  *
  */
-uint16_t otMessageGetOffset(otMessage *aMessage);
+uint16_t otMessageGetOffset(const otMessage *aMessage);
 
 /**
  * Set the message offset in bytes.
@@ -153,7 +211,7 @@ otError otMessageSetOffset(otMessage *aMessage, uint16_t aOffset);
  * @retval FALSE  If link security is not enabled.
  *
  */
-bool otMessageIsLinkSecurityEnabled(otMessage *aMessage);
+bool otMessageIsLinkSecurityEnabled(const otMessage *aMessage);
 
 /**
  * This function sets/forces the message to be forwarded using direct transmission.
@@ -172,7 +230,7 @@ void otMessageSetDirectTransmission(otMessage *aMessage, bool aEnabled);
  * @returns The average RSS value (in dBm) or OT_RADIO_RSSI_INVALID if no average RSS is available.
  *
  */
-int8_t otMessageGetRss(otMessage *aMessage);
+int8_t otMessageGetRss(const otMessage *aMessage);
 
 /**
  * Append bytes to a message.
@@ -214,7 +272,7 @@ otError otMessageAppend(otMessage *aMessage, const void *aBuf, uint16_t aLength)
  * @sa otMessageWrite
  *
  */
-int otMessageRead(otMessage *aMessage, uint16_t aOffset, void *aBuf, uint16_t aLength);
+uint16_t otMessageRead(const otMessage *aMessage, uint16_t aOffset, void *aBuf, uint16_t aLength);
 
 /**
  * Write bytes to a message.
@@ -322,7 +380,7 @@ otMessage *otMessageQueueGetNext(otMessageQueue *aQueue, const otMessage *aMessa
  * @param[out]  aBufferInfo  A pointer where the message buffer information is written.
  *
  */
-OTAPI void OTCALL otMessageGetBufferInfo(otInstance *aInstance, otBufferInfo *aBufferInfo);
+void otMessageGetBufferInfo(otInstance *aInstance, otBufferInfo *aBufferInfo);
 
 /**
  * @}

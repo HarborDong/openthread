@@ -29,7 +29,6 @@
 #include "test_platform.h"
 
 #include <openthread/config.h>
-#include <openthread/openthread.h>
 
 #include "test_util.h"
 #include "common/code_utils.hpp"
@@ -42,15 +41,14 @@ enum
     kStringSize = 10,
 };
 
-template <uint16_t kSize>
-void PrintString(const char *aName, const String<kSize> aString)
+template <uint16_t kSize> void PrintString(const char *aName, const String<kSize> aString)
 {
     printf("\t%s = [%d] \"%s\"\n", aName, aString.GetLength(), aString.AsCString());
 }
 
 void TestString(void)
 {
-    otError error;
+    otError             error;
     String<kStringSize> str1;
     String<kStringSize> str2("abc");
     String<kStringSize> str3("%d", 12);
@@ -121,11 +119,9 @@ void TestString(void)
 
 } // namespace ot
 
-#ifdef ENABLE_TEST_MAIN
 int main(void)
 {
     ot::TestString();
     printf("\nAll tests passed.\n");
     return 0;
 }
-#endif

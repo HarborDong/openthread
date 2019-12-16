@@ -34,13 +34,16 @@
 #ifndef RADIO_SPINEL_HPP_
 #define RADIO_SPINEL_HPP_
 
-#include "frame_queue.hpp"
-#include "hdlc.hpp"
-#include "spinel.h"
+#include <openthread/platform/radio.h>
+
+#include "hdlc_interface.hpp"
+#include "ncp/ncp_config.h"
+#include "ncp/spinel.h"
 
 namespace ot {
+namespace PosixApp {
 
-class RadioSpinel
+class RadioSpinel : public HdlcInterface::Callbacks
 {
 public:
     /**
@@ -52,11 +55,10 @@ public:
     /**
      * Initialize this radio transceiver.
      *
-     * @param[in]   aRadioFile    The path to either a uart device or an executable.
-     * @param[in]   aRadioConfig  Parameters given to the device or executable.
+     * @param[in]  aPlatformConfig  Platform configuration structure.
      *
      */
-    void Init(const char *aRadioFile, const char *aRadioConfig);
+    void Init(const otPlatformConfig &aPlatformConfig);
 
     /**
      * Deinitialize this radio transceiver.
@@ -159,6 +161,53 @@ public:
     otError SetTransmitPower(int8_t aPower);
 
     /**
+     * This method gets the radio's CCA ED threshold in dBm.
+     *
+     * @param[out]  aThreshold    The CCA ED threshold in dBm.
+     *
+     * @retval  OT_ERROR_NONE               Succeeded.
+     * @retval  OT_ERROR_BUSY               Failed due to another operation is on going.
+     * @retval  OT_ERROR_RESPONSE_TIMEOUT   Failed due to no response received from the transceiver.
+     *
+     */
+    otError GetCcaEnergyDetectThreshold(int8_t &aThreshold);
+
+    /**
+     * This method sets the radio's CCA ED threshold in dBm.
+     *
+     * @param[in]   aThreshold     The CCA ED threshold in dBm.
+     *
+     * @retval  OT_ERROR_NONE               Succeeded.
+     * @retval  OT_ERROR_BUSY               Failed due to another operation is on going.
+     * @retval  OT_ERROR_RESPONSE_TIMEOUT   Failed due to no response received from the transceiver.
+     *
+     */
+    otError SetCcaEnergyDetectThreshold(int8_t aThreshold);
+
+    /**
+     * This method returns the radio sw version string.
+     *
+     * @returns A pointer to the radio version string.
+     *
+     */
+    const char *GetVersion(void) const { return mVersion; }
+
+    /**
+     * This method returns the radio capabilities.
+     *
+     * @returns The radio capability bit vector.
+     *
+     */
+    otRadioCaps GetRadioCaps(void) const { return mRadioCaps; }
+
+    /**
+     * This method gets the most recent RSSI measurement.
+     *
+     * @returns The RSSI in dBm when it is valid.  127 when RSSI is invalid.
+     */
+    int8_t GetRssi(void);
+
+    /**
      * This method returns the radio receive sensitivity value.
      *
      * @returns The radio receive sensitivity value in dBm.
@@ -168,7 +217,42 @@ public:
      * @retval  OT_ERROR_RESPONSE_TIMEOUT   Failed due to no response received from the transceiver.
      *
      */
-    uint8_t GetReceiveSensitivity(void) const { return mRxSensitivity; }
+    int8_t GetReceiveSensitivity(void) const { return mRxSensitivity; }
+
+#if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+    /**
+     * Enable the radio coex.
+     *
+     * @param[in] aInstance  The OpenThread instance structure.
+     * @param[in] aEnabled   TRUE to enable the radio coex, FALSE otherwise.
+     *
+     * @retval OT_ERROR_NONE     Successfully enabled.
+     * @retval OT_ERROR_FAILED   The radio coex could not be enabled.
+     *
+     */
+    otError SetCoexEnabled(bool aEnabled);
+
+    /**
+     * Check whether radio coex is enabled or not.
+     *
+     * @param[in] aInstance  The OpenThread instance structure.
+     *
+     * @returns TRUE if the radio coex is enabled, FALSE otherwise.
+     *
+     */
+    bool IsCoexEnabled(void);
+
+    /**
+     * This method retrieves the radio coexistence metrics.
+     *
+     * @param[out] aCoexMetrics  A reference to the coexistence metrics structure.
+     *
+     * @retval OT_ERROR_NONE          Successfully retrieved the coex metrics.
+     * @retval OT_ERROR_INVALID_ARGS  @p aCoexMetrics was NULL.
+     *
+     */
+    otError GetCoexMetrics(otRadioCoexMetrics &aCoexMetrics);
+#endif
 
     /**
      * This method returns a reference to the transmit buffer.
@@ -269,6 +353,19 @@ public:
     otError ClearSrcMatchExtEntries(void);
 
     /**
+     * This method begins the energy scan sequence on the radio.
+     *
+     * @param[in]  aScanChannel     The channel to perform the energy scan on.
+     * @param[in]  aScanDuration    The duration, in milliseconds, for the channel to be scanned.
+     *
+     * @retval  OT_ERROR_NONE               Succeeded.
+     * @retval  OT_ERROR_BUSY               Failed due to another operation is on going.
+     * @retval  OT_ERROR_RESPONSE_TIMEOUT   Failed due to no response received from the transceiver.
+     *
+     */
+    otError EnergyScan(uint8_t aScanChannel, uint16_t aScanDuration);
+
+    /**
      * This method switches the radio state from Receive to Transmit.
      *
      * @param[in] aFrame     A reference to the transmitted frame.
@@ -282,7 +379,7 @@ public:
     otError Transmit(otRadioFrame &aFrame);
 
     /**
-     * This method swithes the radio state from Sleep to Receive.
+     * This method switches the radio state from Sleep to Receive.
      *
      * @param[in]  aChannel   The channel to use for receiving.
      *
@@ -329,7 +426,7 @@ public:
      * @returns TRUE if the radio is enabled, FALSE otherwise.
      *
      */
-    bool IsEnabled(void) const { return mState != OT_RADIO_STATE_DISABLED; }
+    bool IsEnabled(void) const { return mState != kStateDisabled; }
 
     /**
      * This method updates the file descriptor sets with file descriptors used by the radio driver.
@@ -351,15 +448,97 @@ public:
      */
     void Process(const fd_set &aReadFdSet, const fd_set &aWriteFdSet);
 
+#if OPENTHREAD_POSIX_VIRTUAL_TIME
+    /**
+     * This method performs radio spinel processing in simulation mode.
+     *
+     * @param[in]   aEvent  A reference to the current received simulation event.
+     *
+     */
+    void Process(const struct Event &aEvent);
+
+    /**
+     * This method updates the @p aTimeout for processing radio spinel in simulation mode.
+     *
+     * @param[out]   aTimeout    A reference to the current timeout.
+     *
+     */
+    void Update(struct timeval &aTimeout);
+#endif
+
+#if OPENTHREAD_CONFIG_DIAG_ENABLE
+    /**
+     * This method enables/disables the factory diagnostics mode.
+     *
+     * @param[in]  aMode  TRUE to enable diagnostics mode, FALSE otherwise.
+     *
+     */
+    void SetDiagEnabled(bool aMode) { mDiagMode = aMode; }
+
+    /**
+     * This method indicates whether or not factory diagnostics mode is enabled.
+     *
+     * @returns TRUE if factory diagnostics mode is enabled, FALSE otherwise.
+     *
+     */
+    bool IsDiagEnabled(void) const { return mDiagMode; }
+
+    /**
+     * This method processes platform diagnostics commands.
+     *
+     * @param[in]   aString         A NULL-terminated input string.
+     * @param[out]  aOutput         The diagnostics execution result.
+     * @param[in]   aOutputMaxLen   The output buffer size.
+     *
+     * @retval  OT_ERROR_NONE               Succeeded.
+     * @retval  OT_ERROR_BUSY               Failed due to another operation is on going.
+     * @retval  OT_ERROR_RESPONSE_TIMEOUT   Failed due to no response received from the transceiver.
+     *
+     */
+    otError PlatDiagProcess(const char *aString, char *aOutput, size_t aOutputMaxLen);
+#endif
+
+    /**
+     * This method returns the radio channel mask.
+     *
+     * @param[in]   aPreferred  TRUE to get preferred channel mask, FALSE to get supported channel mask.
+     *
+     * @returns The radio channel mask according to @aPreferred:
+     *   The radio supported channel mask that the device is allowed to be on.
+     *   The radio preferred channel mask that the device prefers to form on.
+     *
+     */
+    uint32_t GetRadioChannelMask(bool aPreferred);
+
+    /**
+     *  This method processes a received Spinel frame.
+     *
+     * @param[in] aFrameBuffer The frame buffer constaining the newly received frame.
+     */
+    void HandleSpinelFrame(HdlcInterface::RxFrameBuffer &aFrameBuffer);
+
 private:
     enum
     {
-        kMaxSpinelFrame = 2048, ///< Max size in bytes for transfering spinel frames.
-        kMaxWaitTime    = 2000, ///< Max time to wait for response in milliseconds.
+        kMaxSpinelFrame        = HdlcInterface::kMaxFrameSize,
+        kMaxWaitTime           = 2000, ///< Max time to wait for response in milliseconds.
+        kVersionStringSize     = 128,  ///< Max size of version string.
+        kCapsBufferSize        = 100,  ///< Max buffer size used to store `SPINEL_PROP_CAPS` value.
+        kChannelMaskBufferSize = 32,   ///< Max buffer size used to store `SPINEL_PROP_PHY_CHAN_SUPPORTED` value.
     };
 
-    void    ReadAll(void);
-    otError WriteAll(const uint8_t *aBuffer, uint16_t aLength);
+    enum State
+    {
+        kStateDisabled,     ///< Radio is disabled.
+        kStateSleep,        ///< Radio is sleep.
+        kStateReceive,      ///< Radio is in receive mode.
+        kStateTransmitting, ///< Frame passed to radio for transmission, waiting for done event from radio.
+        kStateTransmitDone, ///< Radio indicated frame transmission is done.
+    };
+
+    otError CheckSpinelVersion(void);
+    otError CheckCapabilities(void);
+    otError CheckRadioCapabilities(void);
     void    ProcessFrameQueue(void);
 
     /**
@@ -432,13 +611,6 @@ private:
                         va_list           args);
     otError ParseRadioFrame(otRadioFrame &aFrame, const uint8_t *aBuffer, uint16_t aLength);
 
-    static void HandleHdlcError(void *aContext, otError aError, uint8_t *aBuffer, uint16_t aLength);
-    static void HandleSpinelFrame(void *aContext, uint8_t *aBuffer, uint16_t aLength)
-    {
-        static_cast<RadioSpinel *>(aContext)->HandleSpinelFrame(aBuffer, aLength);
-    }
-    void HandleSpinelFrame(const uint8_t *aBuffer, uint16_t aLength);
-
     /**
      * This method returns if the property changed event is safe to be handled now.
      *
@@ -452,10 +624,10 @@ private:
      */
     bool IsSafeToHandleNow(spinel_prop_key_t aKey) const
     {
-        return !((mIsDecoding || mWaitingKey != SPINEL_PROP_LAST_STATUS) &&
-                 (aKey == SPINEL_PROP_STREAM_RAW || aKey == SPINEL_PROP_MAC_ENERGY_SCAN_RESULT));
+        return !(aKey == SPINEL_PROP_STREAM_RAW || aKey == SPINEL_PROP_MAC_ENERGY_SCAN_RESULT);
     }
 
+    void HandleNotification(HdlcInterface::RxFrameBuffer &aFrameBuffer);
     void HandleNotification(const uint8_t *aBuffer, uint16_t aLength);
     void HandleValueIs(spinel_prop_key_t aKey, const uint8_t *aBuffer, uint16_t aLength);
 
@@ -464,9 +636,12 @@ private:
     void HandleWaitingResponse(uint32_t aCommand, spinel_prop_key_t aKey, const uint8_t *aBuffer, uint16_t aLength);
 
     void RadioReceive(void);
-    void RadioTransmit(void);
+
+    void TransmitDone(otRadioFrame *aFrame, otRadioFrame *aAckFrame, otError aError);
 
     otInstance *mInstance;
+
+    HdlcInterface mHdlcInterface;
 
     uint16_t          mCmdTidsInUse;    ///< Used transaction ids.
     spinel_tid_t      mCmdNextTid;      ///< Next available transaction id.
@@ -474,37 +649,42 @@ private:
     spinel_tid_t      mWaitingTid;      ///< The transaction id of current transaction.
     spinel_prop_key_t mWaitingKey;      ///< The property key of current transaction.
     const char *      mPropertyFormat;  ///< The spinel property format of current transaction.
-    va_list           mPropertyArgs;    ///< The arguments pack or unpack spinel property of current transcation.
+    va_list           mPropertyArgs;    ///< The arguments pack or unpack spinel property of current transaction.
     uint32_t          mExpectedCommand; ///< Expected response command of current transaction.
     otError           mError;           ///< The result of current transaction.
 
-    uint8_t       mHdlcBuffer[kMaxSpinelFrame];
-    Hdlc::Decoder mHdlcDecoder;
-    Hdlc::Encoder mHdlcEncoder;
-    FrameQueue    mFrameQueue;
-
     uint8_t       mRxPsdu[OT_RADIO_FRAME_MAX_SIZE];
     uint8_t       mTxPsdu[OT_RADIO_FRAME_MAX_SIZE];
+    uint8_t       mAckPsdu[OT_RADIO_FRAME_MAX_SIZE];
     otRadioFrame  mRxRadioFrame;
     otRadioFrame  mTxRadioFrame;
+    otRadioFrame  mAckRadioFrame;
     otRadioFrame *mTransmitFrame; ///< Points to the frame to send
 
     otExtAddress mExtendedAddress;
     uint16_t     mShortAddress;
-    uint16_t     mPanid;
+    uint16_t     mPanId;
+    otRadioCaps  mRadioCaps;
     uint8_t      mChannel;
     int8_t       mRxSensitivity;
-    uint8_t      mTxState;
     otError      mTxError;
+    char         mVersion[kVersionStringSize];
 
-    int          mSockFd;
-    otRadioState mState;
-    bool         mIsAckRequested : 1; ///< Ack requested.
-    bool         mIsDecoding : 1;     ///< Decoding hdlc frames.
-    bool         mIsPromiscuous : 1;  ///< Promiscuous mode.
-    bool         mIsReady : 1;        ///< NCP ready.
+    State mState;
+    bool  mIsPromiscuous : 1;     ///< Promiscuous mode.
+    bool  mIsReady : 1;           ///< NCP ready.
+    bool  mSupportsLogStream : 1; ///< RCP supports `LOG_STREAM` property with OpenThread log meta-data format.
+
+#if OPENTHREAD_CONFIG_DIAG_ENABLE
+    bool   mDiagMode;
+    char * mDiagOutput;
+    size_t mDiagOutputMaxLen;
+#endif
+
+    uint64_t mTxRadioEndUs;
 };
 
+} // namespace PosixApp
 } // namespace ot
 
 #endif // RADIO_SPINEL_HPP_

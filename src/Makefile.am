@@ -34,7 +34,6 @@ DIST_SUBDIRS                            = \
     core                                  \
     cli                                   \
     ncp                                   \
-    diag                                  \
     posix                                 \
     $(NULL)
 
@@ -52,11 +51,7 @@ if OPENTHREAD_ENABLE_NCP
 SUBDIRS                                += ncp
 endif
 
-if OPENTHREAD_ENABLE_DIAG
-SUBDIRS                                += diag
-endif
-
-if OPENTHREAD_ENABLE_POSIX_APP
+if OPENTHREAD_PLATFORM_POSIX_APP
 SUBDIRS                                += posix
 endif
 

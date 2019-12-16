@@ -36,12 +36,10 @@
 
 #include "openthread-core-config.h"
 
-#include "utils/wrap_stdint.h"
-
-#include <openthread/types.h>
+#include <stdint.h>
 
 #include "common/string.hpp"
-#include "mac/mac_frame.hpp"
+#include "mac/mac_types.hpp"
 
 namespace ot {
 namespace Ip6 {
@@ -246,6 +244,15 @@ public:
     bool IsAnycastRoutingLocator(void) const;
 
     /**
+     * This method indicates whether or not the IPv6 address is an Anycast Service Locator.
+     *
+     * @retval TRUE   If the IPv6 address is an Anycast Service Locator.
+     * @retval FALSE  If the IPv6 address is not an Anycast Service Locator.
+     *
+     */
+    bool IsAnycastServiceLocator(void) const;
+
+    /**
      * This method indicates whether or not the IPv6 address is Subnet-Router Anycast (RFC 4291),
      *
      * @retval TRUE   If the IPv6 address is a Subnet-Router Anycast address.
@@ -299,10 +306,10 @@ public:
     /**
      * This method sets the Interface Identifier.
      *
-     * @param[in]  aEui64  A reference to the IEEE EUI-64 address.
+     * @param[in]  aExtAddress  A reference to the extended address.
      *
      */
-    void SetIid(const Mac::ExtAddress &aEui64);
+    void SetIid(const Mac::ExtAddress &aExtAddress);
 
     /**
      * This method converts the IPv6 Interface Identifier to an IEEE 802.15.4 Extended Address.
@@ -336,7 +343,7 @@ public:
      * @returns The number of IPv6 prefix bits that match.
      *
      */
-    uint8_t PrefixMatch(const Address &aOther) const;
+    uint8_t PrefixMatch(const otIp6Address &aOther) const;
 
     /**
      * This method evaluates whether or not the IPv6 addresses match.
@@ -358,7 +365,7 @@ public:
      * @retval FALSE  If the IPv6 addresses do not differ.
      *
      */
-    bool operator!=(const Address &aOther) const;
+    bool operator!=(const Address &aOther) const { return !(*this == aOther); }
 
     /**
      * This method converts an IPv6 address string to binary.
@@ -395,6 +402,7 @@ private:
     enum
     {
         kInterfaceIdentifierOffset = 8, ///< Interface Identifier offset in bytes.
+        kIp4AddressSize            = 4  ///< Size of the IPv4 address.
     };
 } OT_TOOL_PACKED_END;
 
@@ -406,4 +414,4 @@ private:
 } // namespace Ip6
 } // namespace ot
 
-#endif // NET_IP6_ADDRESS_HPP_
+#endif // IP6_ADDRESS_HPP_

@@ -42,28 +42,33 @@ OBJCOPY = arm-none-eabi-objcopy
 BuildJobs                                                 ?= 10
 
 configure_OPTIONS                                          = \
-    --enable-cli-app=all                                     \
-    --enable-ncp-app=all                                     \
-    --with-ncp-bus=uart                                      \
-    --enable-diag                                            \
+    --enable-cli                                             \
+    --enable-ftd                                             \
+    --enable-mtd                                             \
+    --enable-ncp                                             \
+    --enable-radio-only                                      \
     --with-examples=cc1352                                   \
     MBEDTLS_CPPFLAGS="$(CC1352_MBEDTLS_CPPFLAGS)"            \
     $(NULL)
 
+ifneq ($(DISABLE_BUILTIN_MBEDTLS), 1)
+configure_OPTIONS              += MBEDTLS_CPPFLAGS="$(CC1352_MBEDTLS_CPPFLAGS)"
+endif
+
 DEFAULT_LOGGING                                           ?= 1
 
 CC1352_MBEDTLS_CPPFLAGS                                    = \
-    -DMBEDTLS_CONFIG_FILE='\"cc1352-mbedtls-config.h\"'      \
+    -DMBEDTLS_CONFIG_FILE='\"mbedtls-config.h\"'             \
+    -DMBEDTLS_USER_CONFIG_FILE='\"cc1352-mbedtls-config.h\"' \
     -I$(PWD)/examples/platforms/cc1352/crypto                \
     -I$(PWD)/third_party/ti/devices/cc13x2_cc26x2            \
     -I$(PWD)/third_party/mbedtls                             \
     -I$(PWD)/third_party/mbedtls/repo/include                \
     $(NULL)
 
-CC1352_CONFIG_FILE_CPPFLAGS                                                   = \
-    -DOPENTHREAD_PROJECT_CORE_CONFIG_FILE='\"openthread-core-cc1352-config.h\"' \
-    -I$(PWD)/examples/platforms/cc1352/                                         \
-    $(NULL)
+CC1352_CONFIG_FILE_CPPFLAGS  = -DOPENTHREAD_PROJECT_CORE_CONFIG_FILE='\"openthread-core-cc1352-config.h\"'
+CC1352_CONFIG_FILE_CPPFLAGS += -DOPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE='\"openthread-core-cc1352-config-check.h\"'
+CC1352_CONFIG_FILE_CPPFLAGS += -I$(PWD)/examples/platforms/cc1352/
 
 COMMONCFLAGS                                              := \
     -fdata-sections                                          \

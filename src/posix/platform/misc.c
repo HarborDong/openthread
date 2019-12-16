@@ -26,58 +26,27 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "openthread-core-config.h"
 #include "platform-posix.h"
 
+#include <assert.h>
+#include <fcntl.h>
+#include <setjmp.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
-#include <openthread/types.h>
 #include <openthread/platform/misc.h>
 
-#include "platform.h"
+#include "code_utils.h"
+#include "common/logging.hpp"
 
-extern int    gArgumentsCount;
-extern char **gArguments;
-
-static otPlatResetReason   sPlatResetReason = OT_PLAT_RESET_REASON_POWER_ON;
-bool                       gPlatformPseudoResetWasRequested;
+static otPlatResetReason   sPlatResetReason   = OT_PLAT_RESET_REASON_POWER_ON;
 static otPlatMcuPowerState gPlatMcuPowerState = OT_PLAT_MCU_POWER_STATE_ON;
-
-void otPlatReset(otInstance *aInstance)
-{
-    int i = 0;
-    // Restart the process using execvp.
-    char *argv[gArgumentsCount + 1];
-
-#if OPENTHREAD_PLATFORM_USE_PSEUDO_RESET
-    gPlatformPseudoResetWasRequested = true;
-    sPlatResetReason                 = OT_PLAT_RESET_REASON_SOFTWARE;
-
-#else // elif OPENTHREAD_PLATFORM_USE_PSEUDO_RESET
-
-    for (i = 0; i < gArgumentsCount; ++i)
-    {
-        argv[i] = gArguments[i];
-    }
-
-    argv[gArgumentsCount] = NULL;
-
-    PlatformDeinit();
-    platformUartRestore();
-
-    alarm(0);
-
-    execvp(argv[0], argv);
-    perror("reset failed");
-    exit(EXIT_FAILURE);
-
-#endif // else OPENTHREAD_PLATFORM_USE_PSEUDO_RESET
-
-    (void)aInstance;
-}
 
 otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
 {
-    (void)aInstance;
+    OT_UNUSED_VARIABLE(aInstance);
+
     return sPlatResetReason;
 }
 
@@ -88,9 +57,9 @@ void otPlatWakeHost(void)
 
 otError otPlatSetMcuPowerState(otInstance *aInstance, otPlatMcuPowerState aState)
 {
-    otError error = OT_ERROR_NONE;
+    OT_UNUSED_VARIABLE(aInstance);
 
-    (void)aInstance;
+    otError error = OT_ERROR_NONE;
 
     switch (aState)
     {
@@ -109,6 +78,70 @@ otError otPlatSetMcuPowerState(otInstance *aInstance, otPlatMcuPowerState aState
 
 otPlatMcuPowerState otPlatGetMcuPowerState(otInstance *aInstance)
 {
-    (void)aInstance;
+    OT_UNUSED_VARIABLE(aInstance);
+
     return gPlatMcuPowerState;
+}
+
+int SocketWithCloseExec(int aDomain, int aType, int aProtocol)
+{
+    int rval = 0;
+    int fd   = -1;
+
+#ifdef __APPLE__
+    otEXPECT_ACTION((fd = socket(aDomain, aType, aProtocol)) != -1, perror("socket(SOCK_CLOEXEC)"));
+
+    otEXPECT_ACTION((rval = fcntl(fd, F_GETFD, 0)) != -1, perror("fcntl(F_GETFD)"));
+    otEXPECT_ACTION((rval = fcntl(fd, F_SETFD, rval | FD_CLOEXEC)) != -1, perror("fcntl(F_SETFD)"));
+#else
+    otEXPECT_ACTION((fd = socket(aDomain, aType | SOCK_CLOEXEC, aProtocol)) != -1, perror("socket(SOCK_CLOEXEC)"));
+#endif
+
+exit:
+    if (rval == -1 && fd != -1)
+    {
+        VerifyOrDie(close(fd) == 0, OT_EXIT_ERROR_ERRNO);
+        fd = -1;
+    }
+
+    return fd;
+}
+
+const char *otExitCodeToString(uint8_t aExitCode)
+{
+    const char *retval = NULL;
+
+    switch (aExitCode)
+    {
+    case OT_EXIT_SUCCESS:
+        retval = "Success";
+        break;
+
+    case OT_EXIT_FAILURE:
+        retval = "Failure";
+        break;
+
+    case OT_EXIT_INVALID_ARGUMENTS:
+        retval = "InvalidArgument";
+        break;
+
+    case OT_EXIT_RADIO_SPINEL_INCOMPATIBLE:
+        retval = "RadioSpinelIncompatible";
+        break;
+
+    case OT_EXIT_RADIO_SPINEL_RESET:
+        retval = "RadioSpinelReset";
+        break;
+
+    case OT_EXIT_ERROR_ERRNO:
+        retval = strerror(errno);
+        break;
+
+    default:
+        assert(false);
+        retval = "UnknownExitCode";
+        break;
+    }
+
+    return retval;
 }

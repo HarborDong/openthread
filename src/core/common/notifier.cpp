@@ -31,21 +31,22 @@
  *   This file implements the Notifier class.
  */
 
-#define WPP_NAME "notifier.tmh"
-
 #include "notifier.hpp"
 
 #include "common/code_utils.hpp"
+#include "common/debug.hpp"
+#include "common/locator-getters.hpp"
 #include "common/logging.hpp"
-#include "common/owner-locator.hpp"
 
 namespace ot {
 
-Notifier::Callback::Callback(Handler aHandler, void *aOwner)
+Notifier::Callback::Callback(Instance &aInstance, Handler aHandler, void *aOwner)
     : OwnerLocator(aOwner)
     , mHandler(aHandler)
-    , mNext(this)
+    , mNext(NULL)
 {
+    assert(aHandler != NULL);
+    aInstance.Get<Notifier>().RegisterCallback(*this);
 }
 
 Notifier::Notifier(Instance &aInstance)
@@ -53,7 +54,7 @@ Notifier::Notifier(Instance &aInstance)
     , mFlagsToSignal(0)
     , mSignaledFlags(0)
     , mTask(aInstance, &Notifier::HandleStateChanged, this)
-    , mCallbacks(NULL)
+    , mCallbacks()
 {
     for (unsigned int i = 0; i < kMaxExternalHandlers; i++)
     {
@@ -62,40 +63,9 @@ Notifier::Notifier(Instance &aInstance)
     }
 }
 
-otError Notifier::RegisterCallback(Callback &aCallback)
+void Notifier::RegisterCallback(Callback &aCallback)
 {
-    otError error = OT_ERROR_NONE;
-
-    VerifyOrExit(aCallback.mNext == &aCallback, error = OT_ERROR_ALREADY);
-
-    aCallback.mNext = mCallbacks;
-    mCallbacks      = &aCallback;
-
-exit:
-    return error;
-}
-
-void Notifier::RemoveCallback(Callback &aCallback)
-{
-    VerifyOrExit(mCallbacks != NULL);
-
-    if (mCallbacks == &aCallback)
-    {
-        mCallbacks = mCallbacks->mNext;
-        ExitNow();
-    }
-
-    for (Callback *callback = mCallbacks; callback->mNext != NULL; callback = callback->mNext)
-    {
-        if (callback->mNext == &aCallback)
-        {
-            callback->mNext = aCallback.mNext;
-            ExitNow();
-        }
-    }
-
-exit:
-    aCallback.mNext = &aCallback;
+    mCallbacks.Push(aCallback);
 }
 
 otError Notifier::RegisterCallback(otStateChangedCallback aCallback, void *aContext)
@@ -180,12 +150,9 @@ void Notifier::HandleStateChanged(void)
 
     LogChangedFlags(flags);
 
-    for (Callback *callback = mCallbacks; callback != NULL; callback = callback->mNext)
+    for (Callback *callback = mCallbacks.GetHead(); callback != NULL; callback = callback->GetNext())
     {
-        if (callback->mHandler != NULL)
-        {
-            callback->mHandler(*callback, flags);
-        }
+        callback->Invoke(flags);
     }
 
     for (unsigned int i = 0; i < kMaxExternalHandlers; i++)
@@ -202,12 +169,15 @@ exit:
     return;
 }
 
-#if (OPENTHREAD_CONFIG_LOG_LEVEL >= OT_LOG_LEVEL_INFO) && (OPENTHREAD_CONFIG_LOG_MAC == 1)
+// LCOV_EXCL_START
+
+#if (OPENTHREAD_CONFIG_LOG_LEVEL >= OT_LOG_LEVEL_INFO) && (OPENTHREAD_CONFIG_LOG_CORE == 1)
 
 void Notifier::LogChangedFlags(otChangedFlags aFlags) const
 {
-    otChangedFlags                 flags   = aFlags;
-    bool                           isFirst = true;
+    otChangedFlags                 flags    = aFlags;
+    bool                           addSpace = false;
+    bool                           didLog   = false;
     String<kFlagsStringBufferSize> string;
 
     for (uint8_t bit = 0; bit < sizeof(otChangedFlags) * CHAR_BIT; bit++)
@@ -216,19 +186,33 @@ void Notifier::LogChangedFlags(otChangedFlags aFlags) const
 
         if (flags & (1 << bit))
         {
-            SuccessOrExit(string.Append("%s%s", isFirst ? "" : " ", FlagToString(1 << bit)));
-            isFirst = false;
+            if (string.GetLength() >= kFlagsStringLineLimit)
+            {
+                otLogInfoCore("Notifier: StateChanged (0x%08x) %s%s ...", aFlags, didLog ? "... " : "[",
+                              string.AsCString());
+                string.Clear();
+                didLog   = true;
+                addSpace = false;
+            }
+
+            string.Append("%s%s", addSpace ? " " : "", FlagToString(1 << bit));
+            addSpace = true;
+
             flags ^= (1 << bit);
         }
     }
 
 exit:
-    otLogInfoCore(GetInstance(), "Notifier: StateChanged (0x%04x) [%s] ", aFlags, string.AsCString());
+    otLogInfoCore("Notifier: StateChanged (0x%08x) %s%s] ", aFlags, didLog ? "... " : "[", string.AsCString());
 }
 
 const char *Notifier::FlagToString(otChangedFlags aFlag) const
 {
     const char *retval = "(unknown)";
+
+    // To ensure no clipping of flag names in the logs, the returned
+    // strings from this method should have shorter length than
+    // `kMaxFlagNameLength` value.
 
     switch (aFlag)
     {
@@ -280,20 +264,12 @@ const char *Notifier::FlagToString(otChangedFlags aFlag) const
         retval = "Child-";
         break;
 
-    case OT_CHANGED_IP6_MULTICAST_SUBSRCRIBED:
+    case OT_CHANGED_IP6_MULTICAST_SUBSCRIBED:
         retval = "Ip6Mult+";
         break;
 
-    case OT_CHANGED_IP6_MULTICAST_UNSUBSRCRIBED:
+    case OT_CHANGED_IP6_MULTICAST_UNSUBSCRIBED:
         retval = "Ip6Mult-";
-        break;
-
-    case OT_CHANGED_COMMISSIONER_STATE:
-        retval = "CommissionerState";
-        break;
-
-    case OT_CHANGED_JOINER_STATE:
-        retval = "JoinerState";
         break;
 
     case OT_CHANGED_THREAD_CHANNEL:
@@ -332,6 +308,14 @@ const char *Notifier::FlagToString(otChangedFlags aFlag) const
         retval = "ChanMask";
         break;
 
+    case OT_CHANGED_BORDER_AGENT_STATE:
+        retval = "BorderAgentState";
+        break;
+
+    case OT_CHANGED_THREAD_NETIF_STATE:
+        retval = "NetifState";
+        break;
+
     default:
         break;
     }
@@ -339,7 +323,7 @@ const char *Notifier::FlagToString(otChangedFlags aFlag) const
     return retval;
 }
 
-#else // #if (OPENTHREAD_CONFIG_LOG_LEVEL >= OT_LOG_LEVEL_INFO) && (OPENTHREAD_CONFIG_LOG_MAC == 1)
+#else // #if (OPENTHREAD_CONFIG_LOG_LEVEL >= OT_LOG_LEVEL_INFO) && (OPENTHREAD_CONFIG_LOG_CORE == 1)
 
 void Notifier::LogChangedFlags(otChangedFlags) const
 {
@@ -350,6 +334,8 @@ const char *Notifier::FlagToString(otChangedFlags) const
     return "";
 }
 
-#endif // #if (OPENTHREAD_CONFIG_LOG_LEVEL >= OT_LOG_LEVEL_INFO) && (OPENTHREAD_CONFIG_LOG_MAC == 1)
+#endif // #if (OPENTHREAD_CONFIG_LOG_LEVEL >= OT_LOG_LEVEL_INFO) && (OPENTHREAD_CONFIG_LOG_CORE == 1)
+
+// LCOV_EXCL_STOP
 
 } // namespace ot

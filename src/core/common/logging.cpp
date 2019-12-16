@@ -31,11 +31,7 @@
  *   This file implements the tasklet scheduler.
  */
 
-#define WPP_NAME "logging.tmh"
-
 #include "logging.hpp"
-
-#include <openthread/openthread.h>
 
 #include "common/instance.hpp"
 
@@ -48,10 +44,8 @@
 #error OPENTHREAD_CONFIG_ENABLE_DEBUG_UART_LOG requires OPENTHREAD_CONFIG_ENABLE_DEBUG_UART
 #endif
 
-#ifndef WINDOWS_LOGGING
 #define otLogDump(aFormat, ...) \
-    _otDynamicLog(aInstance, aLogLevel, aLogRegion, aFormat OPENTHREAD_CONFIG_LOG_SUFFIX, ##__VA_ARGS__)
-#endif
+    _otDynamicLog(aLogLevel, aLogRegion, aFormat OPENTHREAD_CONFIG_LOG_SUFFIX, ##__VA_ARGS__)
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,11 +61,7 @@ extern "C" {
  * @param[in]  aLength     Number of bytes in the buffer.
  *
  */
-static void DumpLine(otInstance * aInstance,
-                     otLogLevel   aLogLevel,
-                     otLogRegion  aLogRegion,
-                     const void * aBuf,
-                     const size_t aLength)
+static void DumpLine(otLogLevel aLogLevel, otLogRegion aLogRegion, const void *aBuf, const size_t aLength)
 {
     char  buf[80];
     char *cur = buf;
@@ -119,16 +109,9 @@ static void DumpLine(otInstance * aInstance,
     }
 
     otLogDump("%s", buf);
-
-    OT_UNUSED_VARIABLE(aInstance);
 }
 
-void otDump(otInstance * aInstance,
-            otLogLevel   aLogLevel,
-            otLogRegion  aLogRegion,
-            const char * aId,
-            const void * aBuf,
-            const size_t aLength)
+void otDump(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aId, const void *aBuf, const size_t aLength)
 {
     size_t       idlen = strlen(aId);
     const size_t width = 72;
@@ -154,7 +137,7 @@ void otDump(otInstance * aInstance,
 
     for (size_t i = 0; i < aLength; i += 16)
     {
-        DumpLine(aInstance, aLogLevel, aLogRegion, (uint8_t *)(aBuf) + i, (aLength - i) < 16 ? (aLength - i) : 16);
+        DumpLine(aLogLevel, aLogRegion, (uint8_t *)(aBuf) + i, (aLength - i) < 16 ? (aLength - i) : 16);
     }
 
     cur = buf;
@@ -168,7 +151,7 @@ void otDump(otInstance * aInstance,
     otLogDump("%s", buf);
 }
 #else  // OPENTHREAD_CONFIG_LOG_PKT_DUMP
-void otDump(otInstance *, otLogLevel, otLogRegion, const char *, const void *, const size_t)
+void otDump(otLogLevel, otLogRegion, const char *, const void *, const size_t)
 {
 }
 #endif // OPENTHREAD_CONFIG_LOG_PKT_DUMP
@@ -307,10 +290,6 @@ const char *otThreadErrorToString(otError aError)
         retval = "NonLowpanDataFrame";
         break;
 
-    case OT_ERROR_DISABLED_FEATURE:
-        retval = "DisabledFeature";
-        break;
-
     case OT_ERROR_GENERIC:
         retval = "GenericError";
         break;
@@ -372,5 +351,5 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
 #endif
 
 #ifdef __cplusplus
-};
+}
 #endif

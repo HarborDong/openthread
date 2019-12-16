@@ -30,52 +30,83 @@
 
 .NOTPARALLEL:
 
-COVERAGE                       ?= 0
-DEBUG                          ?= 0
+COVERAGE                             ?= 0
+DEBUG                                ?= 0
 
-ECHO                           := @echo
-MAKE                           := make
-MKDIR_P                        := mkdir -p
-LN_S                           := ln -s
-RM_F                           := rm -f
+# Enable most features by default to cover most code
 
-BuildJobs                      ?= 10
+BORDER_AGENT                         ?= 1
+BORDER_ROUTER                        ?= 1
+COAP                                 ?= 1
+COAPS                                ?= 1
+COMMISSIONER                         ?= 1
+CHANNEL_MANAGER                      ?= 1
+CHANNEL_MONITOR                      ?= 1
+CHILD_SUPERVISION                    ?= 1
+DAEMON                               ?= 0
+DHCP6_CLIENT                         ?= 1
+DHCP6_SERVER                         ?= 1
+DIAGNOSTIC                           ?= 1
+DNS_CLIENT                           ?= 1
+DYNAMIC_LOG_LEVEL                    ?= 1
+ECDSA                                ?= 1
+IP6_FRAGM                            ?= 1
+JAM_DETECTION                        ?= 1
+JOINER                               ?= 1
+LEGACY                               ?= 1
+LINK_RAW                             ?= 0
+LOG_OUTPUT                           ?= PLATFORM_DEFINED
+MAC_FILTER                           ?= 1
+MTD_NETDIAG                          ?= 1
+READLINE                             ?= readline
+REFERENCE_DEVICE                     ?= 1
+SERVICE                              ?= 1
+SNTP_CLIENT                          ?= 1
+UDP_FORWARD                          ?= 1
+
+COMMONCFLAGS                         := \
+    -g                                  \
+    $(NULL)
 
 # If the user has asserted COVERAGE, alter the configuration options
 # accordingly.
 
 configure_OPTIONS                   = \
-    --enable-application-coap         \
-    --enable-border-router            \
-    --enable-cert-log                 \
-    --enable-child-supervision        \
-    --enable-commissioner             \
-    --enable-dhcp6-client             \
-    --enable-dhcp6-server             \
-    --enable-diag                     \
-    --enable-dns-client               \
-    --enable-jam-detection            \
-    --enable-joiner                   \
-    --enable-legacy                   \
-    --enable-mac-filter               \
-    --enable-posix-app=all            \
-    --enable-service                  \
-    --enable-tmf-proxy                \
-    --with-ncp-bus=uart               \
+    --enable-cli                      \
+    --enable-ftd                      \
+    --enable-ncp                      \
+    --enable-posix-app                \
     $(NULL)
 
-TopSourceDir                   := $(dir $(shell readlink $(firstword $(MAKEFILE_LIST))))../..
-AbsTopSourceDir                := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))../..
+# Platform specific switches
 
-CONFIG_FILE      = OPENTHREAD_PROJECT_CORE_CONFIG_FILE='\"openthread-core-posix-config.h\"'
-CONFIG_FILE_PATH = $(AbsTopSourceDir)/src/posix/platform
+ifeq ($(DAEMON),1)
+configure_OPTIONS              += --enable-posix-app-daemon
+endif
 
-COMMONCFLAGS                   := \
-    -O0                           \
-    -g                            \
-    -D$(CONFIG_FILE)              \
-    -I$(CONFIG_FILE_PATH)         \
+ifneq ($(DEBUG),1)
+COMMONCFLAGS                   += \
+    -O2                           \
     $(NULL)
+endif
+
+ifneq ($(HOST),)
+configure_OPTIONS              += --host=$(HOST)
+endif
+
+ifeq ($(PLATFORM_NETIF),1)
+COMMONCFLAGS                   += -DOPENTHREAD_CONFIG_PLATFORM_NETIF_ENABLE=1
+endif
+
+ifneq ($(READLINE),)
+configure_OPTIONS              += --with-readline=$(READLINE)
+endif
+
+ifeq ($(VIRTUAL_TIME),1)
+COMMONCFLAGS                   += -DOPENTHREAD_POSIX_VIRTUAL_TIME=1
+endif
+
+include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../../examples/common-switches.mk
 
 CPPFLAGS                       += \
     $(COMMONCFLAGS)               \
@@ -93,9 +124,24 @@ LDFLAGS                        += \
     $(COMMONCFLAGS)               \
     $(NULL)
 
-INSTALL                         := /usr/bin/install
-INSTALLFLAGS                    := -p
+TopSourceDir                   := $(dir $(shell readlink $(firstword $(MAKEFILE_LIST))))../..
+AbsTopSourceDir                := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))../..
 
+CONFIG_FILE      = OPENTHREAD_PROJECT_CORE_CONFIG_FILE='\"openthread-core-posix-config.h\"'
+CONFIG_FILE_PATH = $(AbsTopSourceDir)/src/posix/platform
+COMMONCFLAGS                   += \
+    -D$(CONFIG_FILE)              \
+    -I$(CONFIG_FILE_PATH)         \
+
+ECHO                           := @echo
+INSTALL                        := /usr/bin/install
+INSTALLFLAGS                   := -p
+LN_S                           := ln -s
+MAKE                           := make
+MKDIR_P                        := mkdir -p
+RM_F                           := rm -f
+
+BuildJobs                      ?= 10
 BuildPath                       = build/posix
 TopBuildDir                     = $(BuildPath)
 AbsTopBuildDir                  = $(PWD)/$(TopBuildDir)

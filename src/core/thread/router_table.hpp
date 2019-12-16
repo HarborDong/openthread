@@ -31,7 +31,7 @@
 
 #include "common/encoding.hpp"
 #include "common/locator.hpp"
-#include "mac/mac_frame.hpp"
+#include "mac/mac_types.hpp"
 #include "thread/mle_constants.hpp"
 #include "thread/thread_tlvs.hpp"
 #include "thread/topology.hpp"
@@ -56,7 +56,7 @@ public:
          * @param[in] aInstance  A reference to the OpenThread instance.
          *
          */
-        Iterator(Instance &aInstance);
+        explicit Iterator(Instance &aInstance);
 
         /**
          * This method resets the iterator to start over.
@@ -118,7 +118,7 @@ public:
      * @param[in]  aInstance  A reference to the OpenThread instance.
      *
      */
-    RouterTable(Instance &aInstance);
+    explicit RouterTable(Instance &aInstance);
 
     /**
      * This method clears the router table.
@@ -177,6 +177,14 @@ public:
     uint8_t GetActiveRouterCount(void) const { return mActiveRouterCount; }
 
     /**
+     * This method returns the number of active links with neighboring routers.
+     *
+     * @returns The number of active links with neighboring routers.
+     *
+     */
+    uint8_t GetActiveLinkCount(void) const;
+
+    /**
      * This method returns the leader in the Thread network.
      *
      * @returns A pointer to the Leader in the Thread network.
@@ -225,17 +233,20 @@ public:
     /**
      * This method returns the router for a given router id.
      *
-     * @parma[in]  aRouterId  The router id.
+     * @param[in]  aRouterId  The router id.
      *
      * @returns A pointer to the router or NULL if the router could not be found.
      *
      */
-    Router *GetRouter(uint8_t aRouterId);
+    Router *GetRouter(uint8_t aRouterId)
+    {
+        return const_cast<Router *>(const_cast<const RouterTable *>(this)->GetRouter(aRouterId));
+    }
 
     /**
      * This method returns the router for a given router id.
      *
-     * @parma[in]  aRouterId  The router id.
+     * @param[in]  aRouterId  The router id.
      *
      * @returns A pointer to the router or NULL if the router could not be found.
      *
@@ -279,7 +290,7 @@ public:
      * @returns The local time when the Router ID Sequence was last updated.
      *
      */
-    uint32_t GetRouterIdSequenceLastUpdated(void) const { return mRouterIdSequenceLastUpdated; }
+    TimeMilli GetRouterIdSequenceLastUpdated(void) const { return mRouterIdSequenceLastUpdated; }
 
     /**
      * This method returns the number of neighbor links.
@@ -301,10 +312,10 @@ public:
     /**
      * This method updates the router table with a received Route TLV.
      *
-     * @param[in]  aRoute  A reference to the Route TLV.
+     * @param[in]  aTlv  A reference to the Route TLV.
      *
      */
-    void ProcessTlv(const Mle::RouteTlv &aRoute);
+    void ProcessTlv(const Mle::RouteTlv &aTlv);
 
     /**
      * This method updates the router table with a received Router Mask TLV.
@@ -312,7 +323,7 @@ public:
      * @param[in]  aTlv  A reference to the Router Mask TLV.
      *
      */
-    void ProcessTlv(const ThreadRouterMaskTlv &Tlv);
+    void ProcessTlv(const ThreadRouterMaskTlv &aTlv);
 
     /**
      * This method updates the router table and must be called with a one second period.
@@ -321,14 +332,33 @@ public:
     void ProcessTimerTick(void);
 
 private:
-    void UpdateAllocation(void);
+    class RouterIdSet
+    {
+    public:
+        void Clear(void) { memset(mRouterIdSet, 0, sizeof(mRouterIdSet)); }
+        bool Contains(uint8_t aRouterId) const { return (mRouterIdSet[aRouterId / 8] & (1 << (aRouterId % 8))) != 0; }
+        void Add(uint8_t aRouterId) { mRouterIdSet[aRouterId / 8] |= 1 << (aRouterId % 8); }
+        void Remove(uint8_t aRouterId) { mRouterIdSet[aRouterId / 8] &= ~(1 << (aRouterId % 8)); }
 
-    Router   mRouters[Mle::kMaxRouters];
-    uint8_t  mAllocatedRouterIds[BitVectorBytes(Mle::kMaxRouterId)];
-    uint8_t  mRouterIdReuseDelay[Mle::kMaxRouterId + 1];
-    uint32_t mRouterIdSequenceLastUpdated;
-    uint8_t  mRouterIdSequence;
-    uint8_t  mActiveRouterCount;
+    private:
+        uint8_t mRouterIdSet[BitVectorBytes(Mle::kMaxRouterId + 1)];
+    };
+
+    void          UpdateAllocation(void);
+    const Router *GetFirstEntry(void) const;
+    const Router *GetNextEntry(const Router *aRouter) const;
+    Router *GetFirstEntry(void) { return const_cast<Router *>(const_cast<const RouterTable *>(this)->GetFirstEntry()); }
+    Router *GetNextEntry(Router *aRouter)
+    {
+        return const_cast<Router *>(const_cast<const RouterTable *>(this)->GetNextEntry(aRouter));
+    }
+
+    Router      mRouters[Mle::kMaxRouters];
+    RouterIdSet mAllocatedRouterIds;
+    uint8_t     mRouterIdReuseDelay[Mle::kMaxRouterId + 1];
+    TimeMilli   mRouterIdSequenceLastUpdated;
+    uint8_t     mRouterIdSequence;
+    uint8_t     mActiveRouterCount;
 };
 
 #endif // OPENTHREAD_FTD
@@ -341,7 +371,7 @@ public:
     class Iterator
     {
     public:
-        Iterator(Instance &) {}
+        explicit Iterator(Instance &) {}
         void    Reset(void) {}
         bool    IsDone(void) const { return true; }
         void    Advance(void) {}

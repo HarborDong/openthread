@@ -35,7 +35,7 @@
 #ifndef OPENTHREAD_SERVER_H_
 #define OPENTHREAD_SERVER_H_
 
-#include <openthread/types.h>
+#include <openthread/netdata.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,7 +61,7 @@ extern "C" {
  *                             On exit, number of copied bytes.
  *
  */
-OTAPI otError OTCALL otServerGetNetDataLocal(otInstance *aInstance, bool aStable, uint8_t *aData, uint8_t *aDataLength);
+otError otServerGetNetDataLocal(otInstance *aInstance, bool aStable, uint8_t *aData, uint8_t *aDataLength);
 
 /**
  * Add a service configuration to the local network data.
@@ -77,7 +77,7 @@ OTAPI otError OTCALL otServerGetNetDataLocal(otInstance *aInstance, bool aStable
  * @sa otServerRegister
  *
  */
-OTAPI otError OTCALL otServerAddService(otInstance *aInstance, const otServiceConfig *aConfig);
+otError otServerAddService(otInstance *aInstance, const otServiceConfig *aConfig);
 
 /**
  * Remove a service configuration from the local network data.
@@ -94,10 +94,10 @@ OTAPI otError OTCALL otServerAddService(otInstance *aInstance, const otServiceCo
  * @sa otServerRegister
  *
  */
-OTAPI otError OTCALL otServerRemoveService(otInstance *aInstance,
-                                           uint32_t    aEnterpriseNumber,
-                                           uint8_t *   aServiceData,
-                                           uint8_t     aServiceDataLength);
+otError otServerRemoveService(otInstance *   aInstance,
+                              uint32_t       aEnterpriseNumber,
+                              const uint8_t *aServiceData,
+                              uint8_t        aServiceDataLength);
 
 /**
  * This function gets the next service in the local Network Data.
@@ -111,25 +111,7 @@ OTAPI otError OTCALL otServerRemoveService(otInstance *aInstance,
  * @retval OT_ERROR_NOT_FOUND  No subsequent service exists in the Thread Network Data.
  *
  */
-OTAPI otError OTCALL otServerGetNextService(otInstance *           aInstance,
-                                            otNetworkDataIterator *aIterator,
-                                            otServiceConfig *      aConfig);
-
-/**
- * This function gets the next service in the leader Network Data.
- *
- * @param[in]     aInstance  A pointer to an OpenThread instance.
- * @param[inout]  aIterator  A pointer to the Network Data iterator context. To get the first service entry
-                             it should be set to OT_NETWORK_DATA_ITERATOR_INIT.
- * @param[out]    aConfig    A pointer to where the service information will be placed.
- *
- * @retval OT_ERROR_NONE       Successfully found the next service.
- * @retval OT_ERROR_NOT_FOUND  No subsequent service exists in the leader Network Data.
- *
- */
-OTAPI otError OTCALL otServerGetNextLeaderService(otInstance *           aInstance,
-                                                  otNetworkDataIterator *aIterator,
-                                                  otServiceConfig *      aConfig);
+otError otServerGetNextService(otInstance *aInstance, otNetworkDataIterator *aIterator, otServiceConfig *aConfig);
 
 /**
  * Immediately register the local network data with the Leader.
@@ -142,7 +124,7 @@ OTAPI otError OTCALL otServerGetNextLeaderService(otInstance *           aInstan
  * @sa otServerRemoveService
  *
  */
-OTAPI otError OTCALL otServerRegister(otInstance *aInstance);
+otError otServerRegister(otInstance *aInstance);
 
 /**
  * @}

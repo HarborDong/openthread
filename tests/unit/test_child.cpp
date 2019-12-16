@@ -29,7 +29,6 @@
 #include "test_platform.h"
 
 #include <openthread/config.h>
-#include <openthread/openthread.h>
 
 #include "test_util.h"
 #include "common/code_utils.hpp"
@@ -42,7 +41,7 @@ static ot::Instance *sInstance;
 
 enum
 {
-    kMaxChildIp6Addresses = OPENTHREAD_CONFIG_IP_ADDRS_PER_CHILD,
+    kMaxChildIp6Addresses = OPENTHREAD_CONFIG_MLE_IP_ADDRS_PER_CHILD,
 };
 
 void VerifyChildIp6Addresses(const Child &aChild, uint8_t aAddressListLength, const Ip6::Address aAddressList[])
@@ -55,7 +54,7 @@ void VerifyChildIp6Addresses(const Child &aChild, uint8_t aAddressListLength, co
 
     for (uint8_t index = 0; index < aAddressListLength; index++)
     {
-        VerifyOrQuit(aChild.HasIp6Address(*sInstance, aAddressList[index]), "HasIp6Address() failed\n");
+        VerifyOrQuit(aChild.HasIp6Address(*sInstance, aAddressList[index]), "HasIp6Address() failed");
     }
 
     memset(addressObserved, 0, sizeof(addressObserved));
@@ -82,18 +81,18 @@ void VerifyChildIp6Addresses(const Child &aChild, uint8_t aAddressListLength, co
             }
         }
 
-        VerifyOrQuit(addressIsInList, "Child::GetNextIp6Address() returned an address not in the expected list\n");
+        VerifyOrQuit(addressIsInList, "Child::GetNextIp6Address() returned an address not in the expected list");
     }
 
     for (uint8_t index = 0; index < aAddressListLength; index++)
     {
-        VerifyOrQuit(addressObserved[index], "Child::GetNextIp6Address() missed an entry from the expected list\n");
+        VerifyOrQuit(addressObserved[index], "Child::GetNextIp6Address() missed an entry from the expected list");
 
-        if (sInstance->GetThreadNetif().GetMle().IsMeshLocalAddress(aAddressList[index]))
+        if (sInstance->Get<Mle::MleRouter>().IsMeshLocalAddress(aAddressList[index]))
         {
             SuccessOrQuit(aChild.GetMeshLocalIp6Address(*sInstance, address),
                           "Child::GetMeshLocalIp6Address() failed\n");
-            VerifyOrQuit(address == aAddressList[index], "GetMeshLocalIp6Address() did not return expected address\n");
+            VerifyOrQuit(address == aAddressList[index], "GetMeshLocalIp6Address() did not return expected address");
             hasMeshLocal = true;
         }
     }
@@ -101,7 +100,7 @@ void VerifyChildIp6Addresses(const Child &aChild, uint8_t aAddressListLength, co
     if (!hasMeshLocal)
     {
         VerifyOrQuit(aChild.GetMeshLocalIp6Address(*sInstance, address) == OT_ERROR_NOT_FOUND,
-                     "Child::GetMeshLocalIp6Address() returned an address not in the exptect list\n");
+                     "Child::GetMeshLocalIp6Address() returned an address not in the expected list");
     }
 }
 
@@ -128,7 +127,7 @@ void TestChildIp6Address(void)
     numAddresses = 0;
 
     // First addresses uses the mesh local prefix (mesh-local address).
-    addresses[numAddresses] = sInstance->GetThreadNetif().GetMle().GetMeshLocal64();
+    addresses[numAddresses] = sInstance->Get<Mle::MleRouter>().GetMeshLocal64();
     addresses[numAddresses].SetIid(meshLocalIid);
 
     numAddresses++;
@@ -144,7 +143,7 @@ void TestChildIp6Address(void)
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     printf("Child state after init");
-    memset(&child, 0, sizeof(child));
+    child.Clear();
     VerifyChildIp6Addresses(child, 0, NULL);
     printf(" -- PASS\n");
 
@@ -259,11 +258,9 @@ void TestChildIp6Address(void)
 
 } // namespace ot
 
-#ifdef ENABLE_TEST_MAIN
 int main(void)
 {
     ot::TestChildIp6Address();
     printf("\nAll tests passed.\n");
     return 0;
 }
-#endif

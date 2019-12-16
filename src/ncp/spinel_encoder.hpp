@@ -35,9 +35,9 @@
 
 #include "openthread-core-config.h"
 
+#include <openthread/ip6.h>
 #include <openthread/message.h>
 #include <openthread/ncp.h>
-#include <openthread/types.h>
 
 #include "openthread-core-config.h"
 #include "ncp/ncp_buffer.hpp"
@@ -59,7 +59,7 @@ public:
      * @param[in] aNcpBuffer   A reference to a `NcpFrameBuffer` where the frames are written.
      *
      */
-    SpinelEncoder(NcpFrameBuffer &aNcpBuffer)
+    explicit SpinelEncoder(NcpFrameBuffer &aNcpBuffer)
         : mNcpBuffer(aNcpBuffer)
         , mNumOpenStructs(0)
         , mSavedNumOpenStructs(0)
@@ -129,7 +129,7 @@ public:
      * behavior is undefined.
      *
      * This method moves the write position back to saved position by `BeginFrame()` and replaces the property key
-     * `SPINEL_PORP_LAST_STATUS` and writes the given spinel status error.
+     * `SPINEL_PROP_LAST_STATUS` and writes the given spinel status error.
      *
      * @param[in] aStatus               Spinel error status
      *
@@ -541,6 +541,7 @@ public:
      */
     otError WriteDataWithLen(const uint8_t *aData, uint16_t aDataLen);
 
+#if OPENTHREAD_MTD || OPENTHREAD_FTD
     /**
      * This method adds a message to the current input frame.
      *
@@ -565,6 +566,7 @@ public:
      *
      */
     otError WriteMessage(otMessage *aMessage) { return mNcpBuffer.InFrameFeedMessage(aMessage); }
+#endif
 
     /**
      * This method encodes and writes a set of variables to the current input frame using a given spinel packing format

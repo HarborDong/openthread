@@ -38,6 +38,7 @@
 #if defined(MBEDTLS_GCM_C)
 
 #include "mbedtls/gcm.h"
+#include "mbedtls/platform_util.h"
 
 #include <string.h>
 
@@ -47,9 +48,8 @@
 
 #if defined(MBEDTLS_SELF_TEST) && defined(MBEDTLS_AES_C)
 #include "mbedtls/aes.h"
-#if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
-#else
+#if !defined(MBEDTLS_PLATFORM_C)
 #include <stdio.h>
 #define mbedtls_printf printf
 #endif /* MBEDTLS_PLATFORM_C */
@@ -79,11 +79,6 @@
     (b)[(i) + 3] = (unsigned char) ( (n)       );       \
 }
 #endif
-
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
 
 /*
  * Initialize a context
@@ -498,7 +493,7 @@ int mbedtls_gcm_auth_decrypt( mbedtls_gcm_context *ctx,
 
     if( diff != 0 )
     {
-        mbedtls_zeroize( output, length );
+        mbedtls_platform_zeroize( output, length );
         return( MBEDTLS_ERR_GCM_AUTH_FAILED );
     }
 
@@ -508,7 +503,7 @@ int mbedtls_gcm_auth_decrypt( mbedtls_gcm_context *ctx,
 void mbedtls_gcm_free( mbedtls_gcm_context *ctx )
 {
     mbedtls_cipher_free( &ctx->cipher_ctx );
-    mbedtls_zeroize( ctx, sizeof( mbedtls_gcm_context ) );
+    mbedtls_platform_zeroize( ctx, sizeof( mbedtls_gcm_context ) );
 }
 
 #endif /* !MBEDTLS_GCM_ALT */
@@ -768,7 +763,7 @@ int mbedtls_gcm_self_test( int verbose )
              * there is an alternative underlying implementation i.e. when
              * MBEDTLS_AES_ALT is defined.
              */
-            if( ret == MBEDTLS_ERR_AES_FEATURE_UNAVAILABLE && key_len == 192 )
+            if( ret == MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED && key_len == 192 )
             {
                 mbedtls_printf( "skipped\n" );
                 break;

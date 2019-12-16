@@ -28,12 +28,21 @@
 
 /**
  * @file
- *   This file includes posix compile-time configuration constants
- *   for OpenThread.
+ *   This file includes posix app compile-time configuration constants for OpenThread core.
  */
 
 #ifndef OPENTHREAD_CORE_POSIX_CONFIG_H_
 #define OPENTHREAD_CORE_POSIX_CONFIG_H_
+
+/**
+ * @def OPENTHREAD_CONFIG_LOG_PLATFORM
+ *
+ * Define to enable platform region logging.
+ *
+ */
+#ifndef OPENTHREAD_CONFIG_LOG_PLATFORM
+#define OPENTHREAD_CONFIG_LOG_PLATFORM 1
+#endif
 
 /**
  * @def OPENTHREAD_CONFIG_PLATFORM_INFO
@@ -41,64 +50,35 @@
  * The platform-specific string to insert into the OpenThread version string.
  *
  */
-#define OPENTHREAD_CONFIG_PLATFORM_INFO                         "POSIX"
+#define OPENTHREAD_CONFIG_PLATFORM_INFO "POSIX-APP"
 
 /**
- * @def OPENTHREAD_CONFIG_LOG_OUTPUT
+ * @def OPENTHREAD_CONFIG_IP6_SLAAC_ENABLE
  *
- * Specify where the log output should go.
+ * Define as 1 to enable support for adding of auto-configured SLAAC addresses by OpenThread.
  *
  */
-#ifndef OPENTHREAD_CONFIG_LOG_OUTPUT /* allow command line override */
-#define OPENTHREAD_CONFIG_LOG_OUTPUT  OPENTHREAD_CONFIG_LOG_OUTPUT_PLATFORM_DEFINED
+#ifndef OPENTHREAD_CONFIG_IP6_SLAAC_ENABLE /* allows command line override */
+#define OPENTHREAD_CONFIG_IP6_SLAAC_ENABLE 1
 #endif
 
-#if OPENTHREAD_RADIO
-/**
- * @def OPENTHREAD_CONFIG_ENABLE_SOFTWARE_ACK_TIMEOUT
- *
- * Define to 1 if you want to enable software ACK timeout logic.
- *
- */
-#define OPENTHREAD_CONFIG_ENABLE_SOFTWARE_ACK_TIMEOUT 1
+#define OPENTHREAD_CONFIG_UART_CLI_RAW 1
 
 /**
- * @def OPENTHREAD_CONFIG_ENABLE_SOFTWARE_RETRANSMIT
+ * @def OPENTHREAD_CONFIG_NCP_UART_ENABLE
  *
- * Define to 1 if you want to enable software retransmission logic.
- *
- * Applicable only if raw link layer API is enabled (i.e., `OPENTHREAD_ENABLE_RAW_LINK_API` is set).
+ * Define to 1 to enable NCP UART support.
  *
  */
-#define OPENTHREAD_CONFIG_ENABLE_SOFTWARE_RETRANSMIT 1
+#define OPENTHREAD_CONFIG_NCP_UART_ENABLE 1
 
 /**
- * @def OPENTHREAD_CONFIG_ENABLE_SOFTWARE_CSMA_BACKOFF
+ * @def OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
  *
- * Define to 1 if you want to enable software CSMA-CA backoff logic.
- *
- * Applicable only if raw link layer API is enabled (i.e., `OPENTHREAD_ENABLE_RAW_LINK_API` is set).
+ * Define to 1 if you want to enable radio coexistence implemented in platform.
  *
  */
-#define OPENTHREAD_CONFIG_ENABLE_SOFTWARE_CSMA_BACKOFF          1
-#endif // OPENTHREAD_RADIO
-
-/**
- * @def OPENTHREAD_CONFIG_ENABLE_PLATFORM_USEC_TIMER
- *
- * Define to 1 if you want to support microsecond timer in platform.
- *
- */
-#define OPENTHREAD_CONFIG_ENABLE_PLATFORM_USEC_TIMER            1
-
-/**
- * @def OPENTHREAD_CONFIG_POSIX_APP_ENABLE_PTY_DEVICE
- *
- * Define to 1 if you want to support microsecond timer in platform.
- *
- */
-#ifndef OPENTHREAD_CONFIG_POSIX_APP_ENABLE_PTY_DEVICE
-#define OPENTHREAD_CONFIG_POSIX_APP_ENABLE_PTY_DEVICE 1
+#ifndef OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+#define OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE 1
 #endif
-
-#endif  // OPENTHREAD_CORE_POSIX_CONFIG_H_
+#endif // OPENTHREAD_CORE_POSIX_CONFIG_H_

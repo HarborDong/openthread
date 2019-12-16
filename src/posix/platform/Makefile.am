@@ -32,36 +32,39 @@ lib_LIBRARIES                             = libopenthread-posix.a
 
 libopenthread_posix_a_CPPFLAGS            = \
     -I$(top_srcdir)/include                 \
+    -I$(top_srcdir)/src                     \
     -I$(top_srcdir)/src/core                \
-    -I$(top_srcdir)/src/ncp                 \
     -I$(top_srcdir)/src/posix/platform      \
     -D_GNU_SOURCE                           \
     $(NULL)
 
 libopenthread_posix_a_SOURCES             = \
     alarm.c                                 \
-    diag.c                                  \
-    flash.c                                 \
-    frame_queue.cpp                         \
-    hdlc.cpp                                \
+    entropy.c                               \
+    hdlc_interface.cpp                      \
     logging.c                               \
     misc.c                                  \
-    platform.c                              \
+    netif.cpp                               \
     radio_spinel.cpp                        \
-    random.c                                \
     settings.cpp                            \
-    spi-stubs.c                             \
-    spinel.c                                \
+    sim.c                                   \
+    system.c                                \
     uart.c                                  \
+    udp.cpp                                 \
     $(NULL)
 
 noinst_HEADERS                            = \
-    flash.h                                 \
-    frame_queue.hpp                         \
-    platform.h                              \
     platform-posix.h                        \
+    hdlc_interface.hpp                      \
     radio_spinel.hpp                        \
     $(NULL)
+
+openthread_HEADERS                        = \
+    openthread-system.h                     \
+    $(NULL)
+
+openthreaddir = $(includedir)/openthread
+dist_openthread_HEADERS = $(openthread_headers)
 
 PRETTY_FILES                              = \
     $(libopenthread_posix_a_SOURCES)        \
@@ -71,5 +74,22 @@ PRETTY_FILES                              = \
 if OPENTHREAD_BUILD_COVERAGE
 CLEANFILES                                = $(wildcard *.gcda *.gcno)
 endif # OPENTHREAD_BUILD_COVERAGE
+
+check_PROGRAMS = test-settings
+
+test_settings_CPPFLAGS                    = \
+    -I$(top_srcdir)/include                 \
+    -I$(top_srcdir)/src/core                \
+    -DOPENTHREAD_CONFIG_LOG_PLATFORM=0      \
+    -DSELF_TEST                             \
+    $(NULL)
+
+test_settings_SOURCES                     = \
+    settings.cpp                            \
+    $(NULL)
+
+TESTS                                     = \
+    test-settings                           \
+    $(NULL)
 
 include $(abs_top_nlbuild_autotools_dir)/automake/post.am

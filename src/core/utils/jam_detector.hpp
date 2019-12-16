@@ -36,10 +36,11 @@
 
 #include "openthread-core-config.h"
 
+#include <stdint.h>
+
 #include "common/locator.hpp"
 #include "common/notifier.hpp"
 #include "common/timer.hpp"
-#include "utils/wrap_stdint.h"
 
 namespace ot {
 
@@ -107,10 +108,8 @@ public:
      *
      * @param[in]  aRssiThreshold  The RSSI threshold.
      *
-     * @retval OT_ERROR_NONE       Successfully set the threshold.
-     *
      */
-    otError SetRssiThreshold(int8_t aThreshold);
+    void SetRssiThreshold(int8_t aThreshold);
 
     /**
      * Get the Jam Detection RSSI Threshold (in dBm).
@@ -189,7 +188,7 @@ private:
     void        SetJamState(bool aNewState);
     static void HandleTimer(Timer &aTimer);
     void        HandleTimer(void);
-    void        UpdateHistory(bool aThresholdExceeded);
+    void        UpdateHistory(bool aDidExceedThreshold);
     void        UpdateJamState(void);
     static void HandleStateChanged(Notifier::Callback &aCallback, otChangedFlags aFlags);
     void        HandleStateChanged(otChangedFlags aFlags);
@@ -199,7 +198,7 @@ private:
     Notifier::Callback mNotifierCallback;         // Notifier callback
     TimerMilli         mTimer;                    // RSSI sample timer
     uint64_t           mHistoryBitmap;            // History bitmap, each bit correspond to 1 sec interval
-    uint32_t           mCurSecondStartTime;       // Start time for current 1 sec interval
+    TimeMilli          mCurSecondStartTime;       // Start time for current 1 sec interval
     uint16_t           mSampleInterval;           // Current sample interval
     uint8_t            mWindow : 6;               // Window (in sec) to monitor jamming
     uint8_t            mBusyPeriod : 6;           // BusyPeriod (in sec) with mWindow to alert jamming

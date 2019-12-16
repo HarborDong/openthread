@@ -36,12 +36,13 @@
 
 #include "openthread-core-config.h"
 
-#include "utils/wrap_stdbool.h"
-#include "utils/wrap_stdint.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 #include <openthread/instance.h>
-#include <openthread/types.h>
+#include <openthread/platform/toolchain.h>
 
+#include "common/linked_list.hpp"
 #include "common/locator.hpp"
 #include "common/tasklet.hpp"
 
@@ -60,19 +61,29 @@ namespace ot {
 /**
  * This class implements the OpenThread Notifier.
  *
- * It can be used to register callbacks to be notified of state or configuration changes within OpenThread.
+ * It can be used to register callbacks that notify of state or configuration changes within OpenThread.
+ *
+ * Two callback models are provided:
+ *
+ * - A `Notifier::Callback` object that upon initialization (from its constructor) auto-registers itself with
+ *   the `Notifier`. This model is mainly used by OpenThread core modules.
+ *
+ * - A `otStateChangedCallback` callback handler which needs to be explicitly registered with the `Notifier`. This is
+ *   commonly used by external users (provided as an OpenThread public API). Max number of such callbacks that can be
+ *   registered at the same time is specified by `OPENTHREAD_CONFIG_MAX_STATECHANGE_HANDLERS` configuration parameter.
  *
  */
 class Notifier : public InstanceLocator
 {
 public:
     /**
-     * This class defines a callback instance that can be registered with the `Notifier`.
+     * This class defines a `Notifier` callback instance.
      *
      */
-    class Callback : public OwnerLocator
+    class Callback : public OwnerLocator, public LinkedListEntry<Callback>
     {
         friend class Notifier;
+        friend class LinkedListEntry<Callback>;
 
     public:
         /**
@@ -85,15 +96,18 @@ public:
         typedef void (*Handler)(Callback &aCallback, otChangedFlags aFlags);
 
         /**
-         * This constructor initializes a `Callback` instance
+         * This constructor initializes a `Callback` instance and registers it with `Notifier`.
          *
+         * @param[in] aInstance   A reference to OpenThread instance.
          * @param[in] aHandler    A function pointer to the callback handler.
          * @param[in] aOwner      A pointer to the owner of the `Callback` instance.
          *
          */
-        Callback(Handler aHandler, void *aOwner);
+        Callback(Instance &aInstance, Handler aHandler, void *aOwner);
 
     private:
+        void Invoke(otChangedFlags aFlags) { mHandler(*this, aFlags); }
+
         Handler   mHandler;
         Callback *mNext;
     };
@@ -105,25 +119,6 @@ public:
      *
      */
     explicit Notifier(Instance &aInstance);
-
-    /**
-     * This method registers a callback.
-     *
-     * @param[in]  aCallback     A reference to the callback instance.
-     *
-     * @retval OT_ERROR_NONE     Successfully registered the callback.
-     * @retval OT_ERROR_ALREADY  The callback was already registered.
-     *
-     */
-    otError RegisterCallback(Callback &aCallback);
-
-    /**
-     * This method removes a previously registered callback.
-     *
-     * @param[in]  aCallback     A reference to the callback instance.
-     *
-     */
-    void RemoveCallback(Callback &aCallback);
 
     /**
      * This method registers an `otStateChangedCallback` handler.
@@ -183,11 +178,47 @@ public:
      */
     bool HasSignaled(otChangedFlags aFlags) const { return (mSignaledFlags & aFlags) == aFlags; }
 
+    /**
+     * This template method updates a variable of a type `Type` with a new value and signals the given changed flags.
+     *
+     * If the variable is already set to the same value, this method returns `OT_ERROR_ALREADY` and the changed flags
+     * is signaled using `SignalIfFirst()` (i.e. signal is scheduled only if the flag has not been signaled before).
+     *
+     * The template `Type` should support comparison operator `==` and assignment operator `=`.
+     *
+     * @param[inout] aVariable    A reference to the variable to update.
+     * @param[in]    aNewValue    The new value.
+     * @param[in]    aFlags       The changed flags to signal.
+     *
+     * @retval OT_ERROR_NONE      The variable was update successfully and @p aFlags was signaled.
+     * @retval OT_ERROR_ALREADY   The variable was already set to the same value.
+     *
+     */
+    template <typename Type> otError Update(Type &aVariable, const Type &aNewValue, otChangedFlags aFlags)
+    {
+        otError error = OT_ERROR_NONE;
+
+        if (aVariable == aNewValue)
+        {
+            SignalIfFirst(aFlags);
+            error = OT_ERROR_ALREADY;
+        }
+        else
+        {
+            aVariable = aNewValue;
+            Signal(aFlags);
+        }
+
+        return error;
+    }
+
 private:
     enum
     {
         kMaxExternalHandlers   = OPENTHREAD_CONFIG_MAX_STATECHANGE_HANDLERS,
-        kFlagsStringBufferSize = 128,
+        kFlagsStringLineLimit  = 70, // Character limit to divide the log into multiple lines in `LogChangedFlags()`.
+        kMaxFlagNameLength     = 25, // Max length for string representation of a flag by `FlagToString()`.
+        kFlagsStringBufferSize = kFlagsStringLineLimit + kMaxFlagNameLength,
     };
 
     struct ExternalCallback
@@ -196,17 +227,18 @@ private:
         void *                 mContext;
     };
 
+    void        RegisterCallback(Callback &aCallback);
     static void HandleStateChanged(Tasklet &aTasklet);
     void        HandleStateChanged(void);
 
     void        LogChangedFlags(otChangedFlags aFlags) const;
     const char *FlagToString(otChangedFlags aFlag) const;
 
-    otChangedFlags   mFlagsToSignal;
-    otChangedFlags   mSignaledFlags;
-    Tasklet          mTask;
-    Callback *       mCallbacks;
-    ExternalCallback mExternalCallbacks[kMaxExternalHandlers];
+    otChangedFlags       mFlagsToSignal;
+    otChangedFlags       mSignaledFlags;
+    Tasklet              mTask;
+    LinkedList<Callback> mCallbacks;
+    ExternalCallback     mExternalCallbacks[kMaxExternalHandlers];
 };
 
 /**

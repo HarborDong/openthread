@@ -80,8 +80,14 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_PHY_CHAN:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_CHAN>;
         break;
+    case SPINEL_PROP_PHY_RSSI:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_RSSI>;
+        break;
     case SPINEL_PROP_PHY_RX_SENSITIVITY:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_RX_SENSITIVITY>;
+        break;
+    case SPINEL_PROP_PHY_CCA_THRESHOLD:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_CCA_THRESHOLD>;
         break;
     case SPINEL_PROP_PHY_TX_POWER:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_TX_POWER>;
@@ -110,6 +116,15 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_MAC_PROMISCUOUS_MODE:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_PROMISCUOUS_MODE>;
         break;
+    case SPINEL_PROP_MAC_SCAN_STATE:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_SCAN_STATE>;
+        break;
+    case SPINEL_PROP_MAC_SCAN_MASK:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_SCAN_MASK>;
+        break;
+    case SPINEL_PROP_MAC_SCAN_PERIOD:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_SCAN_PERIOD>;
+        break;
     case SPINEL_PROP_NCP_VERSION:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_NCP_VERSION>;
         break;
@@ -122,30 +137,41 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_VENDOR_ID:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_VENDOR_ID>;
         break;
+    case SPINEL_PROP_PHY_CHAN_SUPPORTED:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_CHAN_SUPPORTED>;
+        break;
+    case SPINEL_PROP_PHY_CHAN_PREFERRED:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_CHAN_PREFERRED>;
+        break;
+#if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+    case SPINEL_PROP_RADIO_COEX_METRICS:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_RADIO_COEX_METRICS>;
+        break;
+    case SPINEL_PROP_RADIO_COEX_ENABLE:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_RADIO_COEX_ENABLE>;
+        break;
+#endif
 
         // --------------------------------------------------------------------------
         // MTD (or FTD) Properties (Get Handler)
 
 #if OPENTHREAD_MTD || OPENTHREAD_FTD
+    case SPINEL_PROP_PHY_PCAP_ENABLED:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_PCAP_ENABLED>;
+        break;
     case SPINEL_PROP_MAC_DATA_POLL_PERIOD:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_DATA_POLL_PERIOD>;
         break;
     case SPINEL_PROP_MAC_EXTENDED_ADDR:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_EXTENDED_ADDR>;
         break;
-    case SPINEL_PROP_MAC_SCAN_STATE:
-        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_SCAN_STATE>;
-        break;
-    case SPINEL_PROP_MAC_SCAN_MASK:
-        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_SCAN_MASK>;
-        break;
-    case SPINEL_PROP_MAC_SCAN_PERIOD:
-        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_SCAN_PERIOD>;
-        break;
     case SPINEL_PROP_MAC_CCA_FAILURE_RATE:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_CCA_FAILURE_RATE>;
         break;
-#if OPENTHREAD_ENABLE_MAC_FILTER
+    case SPINEL_PROP_MAC_MAX_RETRY_NUMBER_DIRECT:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_MAX_RETRY_NUMBER_DIRECT>;
+        break;
+#if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
     case SPINEL_PROP_MAC_BLACKLIST:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_BLACKLIST>;
         break;
@@ -165,14 +191,8 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_MSG_BUFFER_COUNTERS:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MSG_BUFFER_COUNTERS>;
         break;
-    case SPINEL_PROP_PHY_CHAN_SUPPORTED:
-        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_CHAN_SUPPORTED>;
-        break;
     case SPINEL_PROP_PHY_FREQ:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_FREQ>;
-        break;
-    case SPINEL_PROP_PHY_RSSI:
-        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_RSSI>;
         break;
     case SPINEL_PROP_NET_IF_UP:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_NET_IF_UP>;
@@ -269,7 +289,7 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_THREAD_STABLE_NETWORK_DATA_VERSION:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_THREAD_STABLE_NETWORK_DATA_VERSION>;
         break;
-#if OPENTHREAD_ENABLE_BORDER_ROUTER
+#if OPENTHREAD_CONFIG_BORDER_ROUTER_ENABLE
     case SPINEL_PROP_THREAD_NETWORK_DATA:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_THREAD_NETWORK_DATA>;
         break;
@@ -307,7 +327,7 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_IPV6_ROUTE_TABLE:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_IPV6_ROUTE_TABLE>;
         break;
-#if OPENTHREAD_ENABLE_JAM_DETECTION
+#if OPENTHREAD_CONFIG_JAM_DETECTION_ENABLE
     case SPINEL_PROP_JAM_DETECT_ENABLE:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_JAM_DETECT_ENABLE>;
         break;
@@ -327,7 +347,7 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_JAM_DETECT_HISTORY_BITMAP>;
         break;
 #endif
-#if OPENTHREAD_ENABLE_CHANNEL_MONITOR
+#if OPENTHREAD_CONFIG_CHANNEL_MONITOR_ENABLE
     case SPINEL_PROP_CHANNEL_MONITOR_SAMPLE_INTERVAL:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_CHANNEL_MONITOR_SAMPLE_INTERVAL>;
         break;
@@ -344,7 +364,7 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_CHANNEL_MONITOR_CHANNEL_OCCUPANCY>;
         break;
 #endif
-#if OPENTHREAD_ENABLE_LEGACY
+#if OPENTHREAD_CONFIG_LEGACY_ENABLE
     case SPINEL_PROP_NEST_LEGACY_ULA_PREFIX:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_NEST_LEGACY_ULA_PREFIX>;
         break;
@@ -449,6 +469,9 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_CNTR_ALL_MAC_COUNTERS:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_CNTR_ALL_MAC_COUNTERS>;
         break;
+    case SPINEL_PROP_CNTR_MLE_COUNTERS:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_CNTR_MLE_COUNTERS>;
+        break;
         // NCP counters
     case SPINEL_PROP_CNTR_TX_IP_SEC_TOTAL:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_CNTR_TX_IP_SEC_TOTAL>;
@@ -490,17 +513,49 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_CNTR_IP_RX_FAILURE:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_CNTR_IP_RX_FAILURE>;
         break;
-#if OPENTHREAD_CONFIG_ENABLE_TIME_SYNC
+    case SPINEL_PROP_CNTR_ALL_IP_COUNTERS:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_CNTR_ALL_IP_COUNTERS>;
+        break;
+#if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     case SPINEL_PROP_THREAD_NETWORK_TIME:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_THREAD_NETWORK_TIME>;
         break;
 #endif
+#if OPENTHREAD_CONFIG_CHILD_SUPERVISION_ENABLE
+    case SPINEL_PROP_CHILD_SUPERVISION_CHECK_TIMEOUT:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_CHILD_SUPERVISION_CHECK_TIMEOUT>;
+        break;
+#endif
+#if OPENTHREAD_PLATFORM_POSIX_APP
+    case SPINEL_PROP_RCP_VERSION:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_RCP_VERSION>;
+        break;
+#endif
+#if OPENTHREAD_CONFIG_IP6_SLAAC_ENABLE
+    case SPINEL_PROP_SLAAC_ENABLED:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_SLAAC_ENABLED>;
+        break;
+#endif
+#if OPENTHREAD_CONFIG_TMF_NETDATA_SERVICE_ENABLE
+    case SPINEL_PROP_SERVER_ALLOW_LOCAL_DATA_CHANGE:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_SERVER_ALLOW_LOCAL_DATA_CHANGE>;
+        break;
+    case SPINEL_PROP_SERVER_SERVICES:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_SERVER_SERVICES>;
+        break;
+#endif
+    case SPINEL_PROP_SERVER_LEADER_SERVICES:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_SERVER_LEADER_SERVICES>;
+        break;
 #endif // OPENTHREAD_MTD || OPENTHREAD_FTD
 
         // --------------------------------------------------------------------------
         // FTD Only Properties (Get Handler)
 
 #if OPENTHREAD_FTD
+    case SPINEL_PROP_MAC_MAX_RETRY_NUMBER_INDIRECT:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_MAX_RETRY_NUMBER_INDIRECT>;
+        break;
     case SPINEL_PROP_NET_PSKC:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_NET_PSKC>;
         break;
@@ -546,17 +601,39 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_THREAD_ADDRESS_CACHE_TABLE:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_THREAD_ADDRESS_CACHE_TABLE>;
         break;
-#if OPENTHREAD_ENABLE_COMMISSIONER
+    case SPINEL_PROP_THREAD_NEW_DATASET:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_THREAD_NEW_DATASET>;
+        break;
+#if OPENTHREAD_CONFIG_JOINER_ENABLE
+    case SPINEL_PROP_MESHCOP_JOINER_STATE:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MESHCOP_JOINER_STATE>;
+        break;
+#endif
+#if OPENTHREAD_CONFIG_COMMISSIONER_ENABLE
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_STATE:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MESHCOP_COMMISSIONER_STATE>;
+        break;
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_PROVISIONING_URL:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MESHCOP_COMMISSIONER_PROVISIONING_URL>;
+        break;
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_SESSION_ID:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MESHCOP_COMMISSIONER_SESSION_ID>;
+        break;
     case SPINEL_PROP_THREAD_COMMISSIONER_ENABLED:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_THREAD_COMMISSIONER_ENABLED>;
         break;
 #endif
-#if OPENTHREAD_CONFIG_ENABLE_STEERING_DATA_SET_OOB
+#if OPENTHREAD_CONFIG_MLE_STEERING_DATA_SET_OOB_ENABLE
     case SPINEL_PROP_THREAD_STEERING_DATA:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_THREAD_STEERING_DATA>;
         break;
 #endif
-#if OPENTHREAD_ENABLE_CHANNEL_MANAGER
+#if OPENTHREAD_CONFIG_CHILD_SUPERVISION_ENABLE
+    case SPINEL_PROP_CHILD_SUPERVISION_INTERVAL:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_CHILD_SUPERVISION_INTERVAL>;
+        break;
+#endif
+#if OPENTHREAD_CONFIG_CHANNEL_MANAGER_ENABLE
     case SPINEL_PROP_CHANNEL_MANAGER_NEW_CHANNEL:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_CHANNEL_MANAGER_NEW_CHANNEL>;
         break;
@@ -579,20 +656,23 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_INTERVAL>;
         break;
 #endif
-#if OPENTHREAD_CONFIG_ENABLE_TIME_SYNC
+#if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     case SPINEL_PROP_TIME_SYNC_PERIOD:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_TIME_SYNC_PERIOD>;
         break;
     case SPINEL_PROP_TIME_SYNC_XTAL_THRESHOLD:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_TIME_SYNC_XTAL_THRESHOLD>;
         break;
-#endif // OPENTHREAD_CONFIG_ENABLE_TIME_SYNC
+#endif // OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
 #endif // OPENTHREAD_FTD
 
         // --------------------------------------------------------------------------
-        // Raw Link API Properties (Get Handler)
+        // Raw Link or Radio Mode Properties (Get Handler)
 
-#if OPENTHREAD_RADIO || OPENTHREAD_ENABLE_RAW_LINK_API
+#if OPENTHREAD_RADIO || OPENTHREAD_CONFIG_LINK_RAW_ENABLE
+    case SPINEL_PROP_RADIO_CAPS:
+        handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_RADIO_CAPS>;
+        break;
     case SPINEL_PROP_MAC_SRC_MATCH_ENABLED:
         handler = &NcpBase::HandlePropertyGet<SPINEL_PROP_MAC_SRC_MATCH_ENABLED>;
         break;
@@ -617,11 +697,16 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_POWER_STATE:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_POWER_STATE>;
         break;
+#if OPENTHREAD_CONFIG_NCP_ENABLE_MCU_POWER_STATE_CONTROL
     case SPINEL_PROP_MCU_POWER_STATE:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MCU_POWER_STATE>;
         break;
+#endif
     case SPINEL_PROP_UNSOL_UPDATE_FILTER:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_UNSOL_UPDATE_FILTER>;
+        break;
+    case SPINEL_PROP_PHY_CCA_THRESHOLD:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_PHY_CCA_THRESHOLD>;
         break;
     case SPINEL_PROP_PHY_TX_POWER:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_PHY_TX_POWER>;
@@ -641,17 +726,6 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_MAC_RAW_STREAM_ENABLED:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MAC_RAW_STREAM_ENABLED>;
         break;
-
-        // --------------------------------------------------------------------------
-        // MTD (or FTD) Properties (Set Handler)
-
-#if OPENTHREAD_MTD || OPENTHREAD_FTD
-    case SPINEL_PROP_PHY_CHAN_SUPPORTED:
-        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_PHY_CHAN_SUPPORTED>;
-        break;
-    case SPINEL_PROP_MAC_DATA_POLL_PERIOD:
-        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MAC_DATA_POLL_PERIOD>;
-        break;
     case SPINEL_PROP_MAC_SCAN_MASK:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MAC_SCAN_MASK>;
         break;
@@ -660,6 +734,28 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
         break;
     case SPINEL_PROP_MAC_SCAN_PERIOD:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MAC_SCAN_PERIOD>;
+        break;
+#if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+    case SPINEL_PROP_RADIO_COEX_ENABLE:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_RADIO_COEX_ENABLE>;
+        break;
+#endif
+
+        // --------------------------------------------------------------------------
+        // MTD (or FTD) Properties (Set Handler)
+
+#if OPENTHREAD_MTD || OPENTHREAD_FTD
+    case SPINEL_PROP_PHY_PCAP_ENABLED:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_PHY_PCAP_ENABLED>;
+        break;
+    case SPINEL_PROP_PHY_CHAN_SUPPORTED:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_PHY_CHAN_SUPPORTED>;
+        break;
+    case SPINEL_PROP_MAC_DATA_POLL_PERIOD:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MAC_DATA_POLL_PERIOD>;
+        break;
+    case SPINEL_PROP_MAC_MAX_RETRY_NUMBER_DIRECT:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MAC_MAX_RETRY_NUMBER_DIRECT>;
         break;
     case SPINEL_PROP_NET_IF_UP:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_NET_IF_UP>;
@@ -703,10 +799,18 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_IPV6_ICMP_PING_OFFLOAD_MODE:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_IPV6_ICMP_PING_OFFLOAD_MODE>;
         break;
+    case SPINEL_PROP_THREAD_CHILD_TIMEOUT:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_CHILD_TIMEOUT>;
+        break;
+#if OPENTHREAD_CONFIG_JOINER_ENABLE
+    case SPINEL_PROP_MESHCOP_JOINER_COMMISSIONING:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MESHCOP_JOINER_COMMISSIONING>;
+        break;
+#endif
     case SPINEL_PROP_THREAD_RLOC16_DEBUG_PASSTHRU:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_RLOC16_DEBUG_PASSTHRU>;
         break;
-#if OPENTHREAD_ENABLE_MAC_FILTER
+#if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
     case SPINEL_PROP_MAC_WHITELIST:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MAC_WHITELIST>;
         break;
@@ -729,9 +833,11 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_NET_REQUIRE_JOIN_EXISTING:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_NET_REQUIRE_JOIN_EXISTING>;
         break;
+#if OPENTHREAD_CONFIG_ENABLE_DYNAMIC_LOG_LEVEL
     case SPINEL_PROP_DEBUG_NCP_LOG_LEVEL:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_DEBUG_NCP_LOG_LEVEL>;
         break;
+#endif
     case SPINEL_PROP_THREAD_DISCOVERY_SCAN_JOINER_FLAG:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_DISCOVERY_SCAN_JOINER_FLAG>;
         break;
@@ -741,12 +847,32 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_THREAD_DISCOVERY_SCAN_PANID:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_DISCOVERY_SCAN_PANID>;
         break;
-#if OPENTHREAD_ENABLE_BORDER_ROUTER
+#if OPENTHREAD_CONFIG_BORDER_ROUTER_ENABLE
     case SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_ALLOW_LOCAL_NET_DATA_CHANGE>;
         break;
 #endif
-#if OPENTHREAD_ENABLE_JAM_DETECTION
+
+    case SPINEL_PROP_THREAD_ACTIVE_DATASET:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_ACTIVE_DATASET>;
+        break;
+    case SPINEL_PROP_THREAD_PENDING_DATASET:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_PENDING_DATASET>;
+        break;
+    case SPINEL_PROP_THREAD_MGMT_SET_ACTIVE_DATASET:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_MGMT_SET_ACTIVE_DATASET>;
+        break;
+    case SPINEL_PROP_THREAD_MGMT_SET_PENDING_DATASET:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_MGMT_SET_PENDING_DATASET>;
+        break;
+    case SPINEL_PROP_THREAD_MGMT_GET_ACTIVE_DATASET:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_MGMT_GET_ACTIVE_DATASET>;
+        break;
+    case SPINEL_PROP_THREAD_MGMT_GET_PENDING_DATASET:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_MGMT_GET_PENDING_DATASET>;
+        break;
+
+#if OPENTHREAD_CONFIG_JAM_DETECTION_ENABLE
     case SPINEL_PROP_JAM_DETECT_ENABLE:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_JAM_DETECT_ENABLE>;
         break;
@@ -760,7 +886,7 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_JAM_DETECT_BUSY>;
         break;
 #endif
-#if OPENTHREAD_ENABLE_LEGACY
+#if OPENTHREAD_CONFIG_LEGACY_ENABLE
     case SPINEL_PROP_NEST_LEGACY_ULA_PREFIX:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_NEST_LEGACY_ULA_PREFIX>;
         break;
@@ -768,17 +894,44 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_CNTR_RESET:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_CNTR_RESET>;
         break;
+    case SPINEL_PROP_CNTR_ALL_MAC_COUNTERS:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_CNTR_ALL_MAC_COUNTERS>;
+        break;
+    case SPINEL_PROP_CNTR_MLE_COUNTERS:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_CNTR_MLE_COUNTERS>;
+        break;
+    case SPINEL_PROP_CNTR_ALL_IP_COUNTERS:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_CNTR_ALL_IP_COUNTERS>;
+        break;
+#if OPENTHREAD_CONFIG_CHILD_SUPERVISION_ENABLE
+    case SPINEL_PROP_CHILD_SUPERVISION_CHECK_TIMEOUT:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_CHILD_SUPERVISION_CHECK_TIMEOUT>;
+        break;
+#endif
+#if OPENTHREAD_CONFIG_IP6_SLAAC_ENABLE
+    case SPINEL_PROP_SLAAC_ENABLED:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_SLAAC_ENABLED>;
+        break;
+#endif
+#if OPENTHREAD_CONFIG_TMF_NETDATA_SERVICE_ENABLE
+    case SPINEL_PROP_SERVER_ALLOW_LOCAL_DATA_CHANGE:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_SERVER_ALLOW_LOCAL_DATA_CHANGE>;
+        break;
+#endif
 #endif // OPENTHREAD_MTD || OPENTHREAD_FTD
 
         // --------------------------------------------------------------------------
         // FTD Only Properties (Set Handler)
 
 #if OPENTHREAD_FTD
+    case SPINEL_PROP_MAC_MAX_RETRY_NUMBER_INDIRECT:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MAC_MAX_RETRY_NUMBER_INDIRECT>;
+        break;
     case SPINEL_PROP_NET_PSKC:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_NET_PSKC>;
         break;
-    case SPINEL_PROP_THREAD_CHILD_TIMEOUT:
-        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_CHILD_TIMEOUT>;
+    case SPINEL_PROP_NET_PARTITION_ID:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_NET_PARTITION_ID>;
         break;
     case SPINEL_PROP_THREAD_NETWORK_ID_TIMEOUT:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_NETWORK_ID_TIMEOUT>;
@@ -807,35 +960,45 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_THREAD_PREFERRED_ROUTER_ID:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_PREFERRED_ROUTER_ID>;
         break;
-#if OPENTHREAD_CONFIG_ENABLE_STEERING_DATA_SET_OOB
+#if OPENTHREAD_CONFIG_MLE_STEERING_DATA_SET_OOB_ENABLE
     case SPINEL_PROP_THREAD_STEERING_DATA:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_STEERING_DATA>;
         break;
 #endif
-#if OPENTHREAD_ENABLE_UDP_PROXY
-    case SPINEL_PROP_THREAD_UDP_PROXY_STREAM:
-        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_UDP_PROXY_STREAM>;
+#if OPENTHREAD_CONFIG_UDP_FORWARD_ENABLE
+    case SPINEL_PROP_THREAD_UDP_FORWARD_STREAM:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_UDP_FORWARD_STREAM>;
         break;
 #endif
-    case SPINEL_PROP_THREAD_ACTIVE_DATASET:
-        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_ACTIVE_DATASET>;
+#if OPENTHREAD_CONFIG_CHILD_SUPERVISION_ENABLE
+    case SPINEL_PROP_CHILD_SUPERVISION_INTERVAL:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_CHILD_SUPERVISION_INTERVAL>;
         break;
-    case SPINEL_PROP_THREAD_PENDING_DATASET:
-        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_PENDING_DATASET>;
+#endif
+#if OPENTHREAD_CONFIG_COMMISSIONER_ENABLE
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_STATE:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MESHCOP_COMMISSIONER_STATE>;
         break;
-    case SPINEL_PROP_THREAD_MGMT_SET_ACTIVE_DATASET:
-        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_MGMT_SET_ACTIVE_DATASET>;
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_PROVISIONING_URL:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MESHCOP_COMMISSIONER_PROVISIONING_URL>;
         break;
-    case SPINEL_PROP_THREAD_MGMT_SET_PENDING_DATASET:
-        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_MGMT_SET_PENDING_DATASET>;
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_ANNOUNCE_BEGIN:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MESHCOP_COMMISSIONER_ANNOUNCE_BEGIN>;
         break;
-    case SPINEL_PROP_THREAD_MGMT_GET_ACTIVE_DATASET:
-        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_MGMT_GET_ACTIVE_DATASET>;
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_ENERGY_SCAN:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MESHCOP_COMMISSIONER_ENERGY_SCAN>;
         break;
-    case SPINEL_PROP_THREAD_MGMT_GET_PENDING_DATASET:
-        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_MGMT_GET_PENDING_DATASET>;
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_PAN_ID_QUERY:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MESHCOP_COMMISSIONER_PAN_ID_QUERY>;
         break;
-#if OPENTHREAD_ENABLE_CHANNEL_MANAGER
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_MGMT_GET:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MESHCOP_COMMISSIONER_MGMT_GET>;
+        break;
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_MGMT_SET:
+        handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MESHCOP_COMMISSIONER_MGMT_SET>;
+        break;
+#endif
+#if OPENTHREAD_CONFIG_CHANNEL_MANAGER_ENABLE
     case SPINEL_PROP_CHANNEL_MANAGER_NEW_CHANNEL:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_CHANNEL_MANAGER_NEW_CHANNEL>;
         break;
@@ -848,9 +1011,11 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_CHANNEL_MANAGER_FAVORED_CHANNELS:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_CHANNEL_MANAGER_FAVORED_CHANNELS>;
         break;
+#if OPENTHREAD_CONFIG_CHANNEL_MONITOR_ENABLE
     case SPINEL_PROP_CHANNEL_MANAGER_CHANNEL_SELECT:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_CHANNEL_MANAGER_CHANNEL_SELECT>;
         break;
+#endif
     case SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_ENABLED:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_ENABLED>;
         break;
@@ -858,7 +1023,7 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_CHANNEL_MANAGER_AUTO_SELECT_INTERVAL>;
         break;
 #endif
-#if OPENTHREAD_CONFIG_ENABLE_TIME_SYNC
+#if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     case SPINEL_PROP_TIME_SYNC_PERIOD:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_TIME_SYNC_PERIOD>;
         break;
@@ -871,7 +1036,7 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
         // --------------------------------------------------------------------------
         // Raw Link API Properties (Set Handler)
 
-#if OPENTHREAD_RADIO || OPENTHREAD_ENABLE_RAW_LINK_API
+#if OPENTHREAD_RADIO || OPENTHREAD_CONFIG_LINK_RAW_ENABLE
     case SPINEL_PROP_MAC_15_4_SADDR:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_MAC_15_4_SADDR>;
         break;
@@ -887,7 +1052,7 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
     case SPINEL_PROP_PHY_ENABLED:
         handler = &NcpBase::HandlePropertySet<SPINEL_PROP_PHY_ENABLED>;
         break;
-#endif // #if OPENTHREAD_RADIO || OPENTHREAD_ENABLE_RAW_LINK_API
+#endif // #if OPENTHREAD_RADIO || OPENTHREAD_CONFIG_LINK_RAW_ENABLE
 
     default:
         handler = NULL;
@@ -922,7 +1087,7 @@ NcpBase::PropertyHandler NcpBase::FindInsertPropertyHandler(spinel_prop_key_t aK
     case SPINEL_PROP_THREAD_ASSISTING_PORTS:
         handler = &NcpBase::HandlePropertyInsert<SPINEL_PROP_THREAD_ASSISTING_PORTS>;
         break;
-#if OPENTHREAD_ENABLE_BORDER_ROUTER
+#if OPENTHREAD_CONFIG_BORDER_ROUTER_ENABLE
     case SPINEL_PROP_THREAD_OFF_MESH_ROUTES:
         handler = &NcpBase::HandlePropertyInsert<SPINEL_PROP_THREAD_OFF_MESH_ROUTES>;
         break;
@@ -930,7 +1095,7 @@ NcpBase::PropertyHandler NcpBase::FindInsertPropertyHandler(spinel_prop_key_t aK
         handler = &NcpBase::HandlePropertyInsert<SPINEL_PROP_THREAD_ON_MESH_NETS>;
         break;
 #endif
-#if OPENTHREAD_ENABLE_MAC_FILTER
+#if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
     case SPINEL_PROP_MAC_WHITELIST:
         handler = &NcpBase::HandlePropertyInsert<SPINEL_PROP_MAC_WHITELIST>;
         break;
@@ -941,13 +1106,21 @@ NcpBase::PropertyHandler NcpBase::FindInsertPropertyHandler(spinel_prop_key_t aK
         handler = &NcpBase::HandlePropertyInsert<SPINEL_PROP_MAC_FIXED_RSS>;
         break;
 #endif
+#if OPENTHREAD_CONFIG_TMF_NETDATA_SERVICE_ENABLE
+    case SPINEL_PROP_SERVER_SERVICES:
+        handler = &NcpBase::HandlePropertyInsert<SPINEL_PROP_SERVER_SERVICES>;
+        break;
+#endif
 #endif // OPENTHREAD_MTD || OPENTHREAD_FTD
 
         // --------------------------------------------------------------------------
         // FTD Only Properties (Insert Handler)
 
 #if OPENTHREAD_FTD
-#if OPENTHREAD_ENABLE_COMMISSIONER
+#if OPENTHREAD_CONFIG_COMMISSIONER_ENABLE
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_JOINERS:
+        handler = &NcpBase::HandlePropertyInsert<SPINEL_PROP_MESHCOP_COMMISSIONER_JOINERS>;
+        break;
     case SPINEL_PROP_THREAD_JOINERS:
         handler = &NcpBase::HandlePropertyInsert<SPINEL_PROP_THREAD_JOINERS>;
         break;
@@ -957,7 +1130,7 @@ NcpBase::PropertyHandler NcpBase::FindInsertPropertyHandler(spinel_prop_key_t aK
         // --------------------------------------------------------------------------
         // Raw Link API Properties (Insert Handler)
 
-#if OPENTHREAD_RADIO || OPENTHREAD_ENABLE_RAW_LINK_API
+#if OPENTHREAD_RADIO || OPENTHREAD_CONFIG_LINK_RAW_ENABLE
     case SPINEL_PROP_MAC_SRC_MATCH_SHORT_ADDRESSES:
         handler = &NcpBase::HandlePropertyInsert<SPINEL_PROP_MAC_SRC_MATCH_SHORT_ADDRESSES>;
         break;
@@ -996,7 +1169,7 @@ NcpBase::PropertyHandler NcpBase::FindRemovePropertyHandler(spinel_prop_key_t aK
     case SPINEL_PROP_IPV6_MULTICAST_ADDRESS_TABLE:
         handler = &NcpBase::HandlePropertyRemove<SPINEL_PROP_IPV6_MULTICAST_ADDRESS_TABLE>;
         break;
-#if OPENTHREAD_ENABLE_BORDER_ROUTER
+#if OPENTHREAD_CONFIG_BORDER_ROUTER_ENABLE
     case SPINEL_PROP_THREAD_OFF_MESH_ROUTES:
         handler = &NcpBase::HandlePropertyRemove<SPINEL_PROP_THREAD_OFF_MESH_ROUTES>;
         break;
@@ -1007,7 +1180,7 @@ NcpBase::PropertyHandler NcpBase::FindRemovePropertyHandler(spinel_prop_key_t aK
     case SPINEL_PROP_THREAD_ASSISTING_PORTS:
         handler = &NcpBase::HandlePropertyRemove<SPINEL_PROP_THREAD_ASSISTING_PORTS>;
         break;
-#if OPENTHREAD_ENABLE_MAC_FILTER
+#if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
     case SPINEL_PROP_MAC_WHITELIST:
         handler = &NcpBase::HandlePropertyRemove<SPINEL_PROP_MAC_WHITELIST>;
         break;
@@ -1016,6 +1189,11 @@ NcpBase::PropertyHandler NcpBase::FindRemovePropertyHandler(spinel_prop_key_t aK
         break;
     case SPINEL_PROP_MAC_FIXED_RSS:
         handler = &NcpBase::HandlePropertyRemove<SPINEL_PROP_MAC_FIXED_RSS>;
+        break;
+#endif
+#if OPENTHREAD_CONFIG_TMF_NETDATA_SERVICE_ENABLE
+    case SPINEL_PROP_SERVER_SERVICES:
+        handler = &NcpBase::HandlePropertyRemove<SPINEL_PROP_SERVER_SERVICES>;
         break;
 #endif
 #endif // OPENTHREAD_MTD || OPENTHREAD_FTD
@@ -1027,12 +1205,17 @@ NcpBase::PropertyHandler NcpBase::FindRemovePropertyHandler(spinel_prop_key_t aK
     case SPINEL_PROP_THREAD_ACTIVE_ROUTER_IDS:
         handler = &NcpBase::HandlePropertyRemove<SPINEL_PROP_THREAD_ACTIVE_ROUTER_IDS>;
         break;
+#if OPENTHREAD_CONFIG_COMMISSIONER_ENABLE
+    case SPINEL_PROP_MESHCOP_COMMISSIONER_JOINERS:
+        handler = &NcpBase::HandlePropertyRemove<SPINEL_PROP_MESHCOP_COMMISSIONER_JOINERS>;
+        break;
 #endif
+#endif // OPENTHREAD_FTD
 
         // --------------------------------------------------------------------------
         // Raw Link API Properties (Remove Handler)
 
-#if OPENTHREAD_RADIO || OPENTHREAD_ENABLE_RAW_LINK_API
+#if OPENTHREAD_RADIO || OPENTHREAD_CONFIG_LINK_RAW_ENABLE
     case SPINEL_PROP_MAC_SRC_MATCH_SHORT_ADDRESSES:
         handler = &NcpBase::HandlePropertyRemove<SPINEL_PROP_MAC_SRC_MATCH_SHORT_ADDRESSES>;
         break;

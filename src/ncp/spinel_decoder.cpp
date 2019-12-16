@@ -35,6 +35,7 @@
 #include "spinel_decoder.hpp"
 
 #include "common/code_utils.hpp"
+#include "utils/wrap_string.h"
 
 namespace ot {
 namespace Ncp {
@@ -216,7 +217,7 @@ exit:
 }
 
 // Reads an item of given size and updates the pointer `aPtr`.
-otError SpinelDecoder::ReadItem(const uint8_t **aPtr, size_t aSize)
+otError SpinelDecoder::ReadItem(const uint8_t **aPtr, uint16_t aSize)
 {
     otError error = OT_ERROR_NONE;
 
@@ -303,7 +304,8 @@ otError SpinelDecoder::ReadUtf8(const char *&aUtf8)
 
     aUtf8 = reinterpret_cast<const char *>(&mFrame[mIndex]);
 
-    mIndex += (len + sizeof(uint8_t)); // `sizeof(uint8_t)` is added for the terminating null character.
+    // `sizeof(uint8_t)` is added for the terminating null character.
+    mIndex += static_cast<uint16_t>(len + sizeof(uint8_t));
 
 exit:
     return error;

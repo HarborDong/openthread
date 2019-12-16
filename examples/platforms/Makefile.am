@@ -35,13 +35,13 @@ DIST_SUBDIRS                            = \
     cc2538                                \
     cc2650                                \
     cc2652                                \
-    da15000                               \
-    efr32                                 \
-    emsk                                  \
+    efr32mg12                             \
+    efr32mg21                             \
     gp712                                 \
     kw41z                                 \
-    nrf52840                              \
+    nrf528xx                              \
     posix                                 \
+    qpg6095                               \
     samr21                                \
     utils                                 \
     $(NULL)
@@ -68,16 +68,12 @@ if OPENTHREAD_EXAMPLES_CC2652
 SUBDIRS                                += cc2652
 endif
 
-if OPENTHREAD_EXAMPLES_DA15000
-SUBDIRS                                += da15000
+if OPENTHREAD_EXAMPLES_EFR32MG12
+SUBDIRS                                += efr32mg12
 endif
 
-if OPENTHREAD_EXAMPLES_EFR32
-SUBDIRS                                += efr32
-endif
-
-if OPENTHREAD_EXAMPLES_EMSK
-SUBDIRS                                += emsk
+if OPENTHREAD_EXAMPLES_EFR32MG21
+SUBDIRS                                += efr32mg21
 endif
 
 if OPENTHREAD_EXAMPLES_GP712
@@ -88,12 +84,16 @@ if OPENTHREAD_EXAMPLES_KW41Z
 SUBDIRS                                += kw41z
 endif
 
-if OPENTHREAD_EXAMPLES_NRF52840
-SUBDIRS                                += nrf52840
+if OPENTHREAD_EXAMPLES_NRF528XX
+SUBDIRS                                += nrf528xx
 endif
 
 if OPENTHREAD_EXAMPLES_POSIX
 SUBDIRS                                += posix
+endif
+
+if OPENTHREAD_EXAMPLES_QPG6095
+SUBDIRS                                += qpg6095
 endif
 
 if OPENTHREAD_EXAMPLES_SAMR21
@@ -101,7 +101,7 @@ SUBDIRS                                += samr21
 endif
 
 noinst_HEADERS                          = \
-    platform.h                            \
+    openthread-system.h                   \
     $(NULL)
 
 # Always pretty (e.g. for 'make pretty') these subdirectories.
@@ -111,13 +111,13 @@ PRETTY_SUBDIRS                          = \
     cc2538                                \
     cc2650                                \
     cc2652                                \
-    da15000                               \
-    efr32                                 \
-    emsk                                  \
+    efr32mg12                             \
+    efr32mg21                             \
     gp712                                 \
     kw41z                                 \
-    nrf52840                              \
+    nrf528xx                              \
     posix                                 \
+    qpg6095                               \
     samr21                                \
     utils                                 \
     $(NULL)
